@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blooper — Autonomous Agent Fleet</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <span>🤖 Blooper</span>
+            </div>
+            <div class="sidebar-subtitle">Autonomous Productivity Fleet</div>
+        </div>
+
+        <div style="padding: 0.75rem 1rem 0.25rem 1rem; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+            Active Fleet ({{len .Agents}})
+        </div>
+
+        <div class="agent-list" id="agent-list">
+            {{range .Agents}}
+            <button class="agent-item {{if eq .Name $.DefaultAgent}}active{{end}}" 
+                    data-agent="{{.Name}}" 
+                    onclick="selectAgent('{{.Name}}', '{{.DisplayName}}')">
+                <div class="agent-item-name">
+                    {{.DisplayName}}
+                    {{if .BuiltIn}}<span class="badge-builtin">Built-in</span>{{end}}
+                </div>
+                <div class="agent-item-desc">{{.Description}}</div>
+            </button>
+            {{end}}
+        </div>
+
+        <div style="padding: 1rem; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-muted);">
+            <div>Profile: <strong style="color: var(--text-primary);">{{.HardwareProfile}}</strong></div>
+            <div>Model: <strong style="color: var(--accent);">{{.ActiveModel}}</strong></div>
+        </div>
+    </aside>
+
+    <main class="main-container">
+        <header class="topbar">
+            <div class="active-agent-info">
+                <h2 id="active-agent-title" style="font-size: 1.1rem; font-weight: 600;">{{.ActiveAgentDisplayName}}</h2>
+                <span class="status-pill">
+                    <span class="status-dot"></span> Ready
+                </span>
+            </div>
+            <div class="hardware-info">
+                <span>Memory Footprint: <strong>~10 MB</strong></span>
+                <span>Mode: <strong>Local Inference</strong></span>
+            </div>
+        </header>
+
+        <section class="messages-container" id="messages">
+            <div class="message assistant">
+                <div class="message-meta">{{.ActiveAgentDisplayName}}</div>
+                <div class="message-content">
+                    Hello! I'm {{.ActiveAgentDisplayName}}. You can give me a task or ask me to help build a new agent for your fleet.
+                </div>
+            </div>
+        </section>
+
+        <footer class="input-container">
+            <form class="input-form" onsubmit="sendMessage(event)">
+                <input type="text" 
+                       id="user-input" 
+                       class="input-box" 
+                       placeholder="Message agent (e.g. 'I need an agent that monitors sales leads')..." 
+                       autocomplete="off" />
+                <button type="submit" class="btn btn-send">Send</button>
+            </form>
+        </footer>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

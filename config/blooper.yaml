@@ -1,0 +1,19 @@
+# Blooper Global Configuration
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+ollama:
+  base_url: "http://localhost:11434"
+
+hardware_profile: "m5_pro_24gb"  # or "linux_1080ti"
+
+agent_dirs:
+  - "agents"
+  - "user_agents"
+
+default_agent: "agent_creator"
+
+memory:
+  db_path: "data/blooper.db"
+  auto_summarize: true

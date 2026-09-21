@@ -1,0 +1,17 @@
+# Hardware Profile Presets
+profiles:
+  m5_pro_24gb:
+    name: "Apple M5 Pro (24GB Unified)"
+    default_model: "qwen3:14b"
+    fallback_model: "qwen3:8b"
+    max_context_length: 8192
+    max_parallel_requests: 2
+    notes: "UMA ~16-18GB usable. 14B Q4 fits comfortably with ~6GB headroom."
+
+  linux_1080ti:
+    name: "Linux AMD + GTX 1080 Ti (11GB VRAM)"
+    default_model: "qwen3:8b"
+    fallback_model: "qwen3:4b"
+    max_context_length: 4096
+    max_parallel_requests: 1
+    notes: "Pascal arch (sm_61). 8B Q4 ~5GB weights + ~2GB KV = ~7GB. Stay under 11GB VRAM."
