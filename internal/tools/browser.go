@@ -11,11 +11,13 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"math/rand"
 
 	"github.com/chengyaolee/blooper/internal/llm"
 	"github.com/go-rod/rod"
+	"github.com/go-rod/stealth"
 	"github.com/go-rod/rod/lib/launcher"
-	"github.com/go-rod/rod/lib/proto"
+	// "github.com/go-rod/rod/lib/proto"
 )
 
 // isSafeURL checks if a target URL is safe to visit, preventing SSRF to private/internal networks.
@@ -58,6 +60,7 @@ func isSafeURL(rawURL string) error {
 type BrowserTool struct {
 	mu            sync.Mutex
 	browser       *rod.Browser
+	page          *rod.Page
 	screenshotDir string
 	headless      bool
 }
@@ -83,9 +86,11 @@ func (t *BrowserTool) getBrowser() (*rod.Browser, error) {
 
 	// Launch controlled headless browser
 	l := launcher.New().
-		Headless(t.headless).
+		Set("headless", "new").
+		Set("disable-blink-features", "AutomationControlled").
+		Set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36").
+		Set("window-size", "1920,1080").
 		Set("no-sandbox").
-		Set("disable-gpu").
 		Set("disable-dev-shm-usage")
 
 	urlStr, err := l.Launch()
@@ -107,11 +112,17 @@ func (t *BrowserTool) Close() error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	// Clear page and browser instances
+	if t.page != nil {
+		_ = t.page.Close()
+		t.page = nil
+	}
 	if t.browser != nil {
 		err := t.browser.Close()
 		t.browser = nil
 		return err
 	}
+
 	return nil
 }
 
@@ -120,7 +131,7 @@ func (t *BrowserTool) Name() string {
 }
 
 func (t *BrowserTool) Description() string {
-	return "Browses a web page, extracts readable text, clicks elements, or captures screenshots. Actions: 'navigate', 'screenshot', 'click'."
+	return "Browses a web page, extracts readable text, clicks elements, or captures screenshots. Actions: 'navigate', 'screenshot', 'click', 'fill'."
 }
 
 func (t *BrowserTool) Schema() llm.FunctionDef {
@@ -132,7 +143,7 @@ func (t *BrowserTool) Schema() llm.FunctionDef {
 			"properties": map[string]interface{}{
 				"action": map[string]interface{}{
 					"type":        "string",
-					"enum":        []string{"navigate", "screenshot", "click"},
+					"enum":        []string{"navigate", "screenshot", "click", "fill"},
 					"description": "Browser action to perform",
 				},
 				"url": map[string]interface{}{
@@ -141,7 +152,11 @@ func (t *BrowserTool) Schema() llm.FunctionDef {
 				},
 				"selector": map[string]interface{}{
 					"type":        "string",
-					"description": "CSS selector to click (for 'click' action)",
+					"description": "CSS selector to click or fill (for 'click' and 'fill' actions)",
+				},
+				"text": map[string]interface{}{
+					"type":        "string",
+					"description": "Text to fill into the element (for 'fill' action)",
 				},
 			},
 			"required": []string{"action"},
@@ -154,6 +169,7 @@ func (t *BrowserTool) Execute(ctx context.Context, args json.RawMessage) (*ToolR
 		Action   string `json:"action"`
 		URL      string `json:"url"`
 		Selector string `json:"selector"`
+		Text 	 string `json:"text"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return &ToolResult{Error: "invalid arguments"}, nil
@@ -174,11 +190,22 @@ func (t *BrowserTool) Execute(ctx context.Context, args json.RawMessage) (*ToolR
 			return &ToolResult{Error: fmt.Sprintf("security block: %v", err)}, nil
 		}
 
-		page, err := browser.Context(ctxTimeout).Page(proto.TargetCreateTarget{URL: params.URL})
+		// Open a stealth page
+		page, err := stealth.Page(browser.Context(ctxTimeout))
 		if err != nil {
-			return &ToolResult{Error: fmt.Sprintf("failed to load page %s: %v", params.URL, err)}, nil
+			return &ToolResult{Error: fmt.Sprintf("failed to create page: %v", err)}, nil
 		}
-		defer page.Close()
+
+		// Close the previous page if it exists
+		if t.page != nil {
+			_ = t.page.Close()
+		}
+		t.page = page
+
+		// Navigate to the URL
+		if err:= page.Navigate(params.URL); err != nil {
+			return &ToolResult{Error: fmt.Sprintf("failed to navigate to %s: %v", params.URL, err)}, nil
+		}
 
 		_ = page.WaitLoad()
 
@@ -224,11 +251,17 @@ func (t *BrowserTool) Execute(ctx context.Context, args json.RawMessage) (*ToolR
 			return &ToolResult{Error: fmt.Sprintf("security block: %v", err)}, nil
 		}
 
-		page, err := browser.Context(ctxTimeout).Page(proto.TargetCreateTarget{URL: params.URL})
+		// Open a stealth page
+		page, err := stealth.Page(browser.Context(ctxTimeout))
 		if err != nil {
-			return &ToolResult{Error: fmt.Sprintf("failed to load page: %v", err)}, nil
+			return &ToolResult{Error: fmt.Sprintf("failed to create page: %v", err)}, nil
 		}
 		defer page.Close()
+
+		// Navigate to the URL
+		if err:= page.Navigate(params.URL); err != nil {
+			return &ToolResult{Error: fmt.Sprintf("failed to navigate to %s: %v", params.URL, err)}, nil
+		}
 
 		_ = page.WaitLoad()
 
@@ -255,6 +288,26 @@ func (t *BrowserTool) Execute(ctx context.Context, args json.RawMessage) (*ToolR
 			Output: fmt.Sprintf("Simulated click on selector: %s", params.Selector),
 		}, nil
 
+	case "fill":
+		if t.page == nil {
+			return &ToolResult{Error: "no page open; navigate first"}, nil
+		}
+		if params.Selector == "" {
+			return &ToolResult{Error: "selector required for fill action"}, nil
+		}
+		// Locate element on page
+		el, err := t.page.Element(params.Selector)
+		if err != nil {
+			return &ToolResult{Error: fmt.Sprintf("failed to locate element %s: %v", params.Selector, err)}, nil
+		}
+
+		// Clear existing text and type new value (human-like)
+		_ = el.SelectAllText()
+		if err := humanType(el, params.Text); err != nil {
+			return &ToolResult{Error: fmt.Sprintf("typing failed: %v", err)}, nil
+		}
+		return &ToolResult{Output: fmt.Sprintf("Successfully typed text into %s", params.Selector)}, nil
+
 	default:
 		return &ToolResult{Error: fmt.Sprintf("unknown action %q", params.Action)}, nil
 	}
@@ -262,4 +315,22 @@ func (t *BrowserTool) Execute(ctx context.Context, args json.RawMessage) (*ToolR
 
 func (t *BrowserTool) RequiresApproval() bool {
 	return false
+}
+
+
+func humanType(el *rod.Element, text string) error {
+	for _, char := range text {
+		// 1. Type a single character
+		if err := el.Input(string(char)); err != nil {
+			return err
+		}
+		// 2. Sleep between 70ms and 150ms per keystroke - simulate typing speed
+		time.Sleep(time.Duration(70+rand.Intn(80)) * time.Millisecond)
+
+		// 3. 5% chance of a longer thinking pause (250ms - 400ms)
+		if rand.Float32() < 0.05 {
+			time.Sleep(time.Duration(250+rand.Intn(150)) * time.Millisecond)
+		}
+	}
+	return nil
 }
