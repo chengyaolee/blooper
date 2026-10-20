@@ -11,9 +11,9 @@ import (
 	"github.com/chengyaolee/blooper/internal/llm"
 )
 
-// sanitizePath ensures that requested paths stay within allowed directories,
+// SanitizePath ensures that requested paths stay within allowed directories,
 // preventing directory traversal attacks (e.g. ../../../etc/passwd).
-func sanitizePath(baseDir, requestedPath string) (string, error) {
+func SanitizePath(baseDir, requestedPath string) (string, error) {
 	cleanBase, err := filepath.Abs(baseDir)
 	if err != nil {
 		return "", fmt.Errorf("invalid base directory: %w", err)
@@ -35,7 +35,7 @@ func sanitizePath(baseDir, requestedPath string) (string, error) {
 	}
 
 	// Verify that cleanTarget starts with cleanBase
-	if !strings.HasPrefix(cleanTarget, cleanBase) {
+	if cleanTarget != cleanBase && !strings.HasPrefix(cleanTarget, cleanBase+string(filepath.Separator)) {
 		return "", fmt.Errorf("access denied: path escapes permitted directory %s", baseDir)
 	}
 
@@ -93,7 +93,7 @@ func (t *FileWriteTool) Execute(ctx context.Context, args json.RawMessage) (*Too
 		return &ToolResult{Error: "invalid arguments"}, nil
 	}
 
-	safePath, err := sanitizePath(t.BaseDir, params.Filename)
+	safePath, err := SanitizePath(t.BaseDir, params.Filename)
 	if err != nil {
 		return &ToolResult{Error: fmt.Sprintf("security violation: %v", err)}, nil
 	}
@@ -168,7 +168,7 @@ func (t *FileReadTool) Execute(ctx context.Context, args json.RawMessage) (*Tool
 	var allowed bool
 
 	for _, dir := range t.AllowedDirs {
-		sp, sErr := sanitizePath(dir, params.Path)
+		sp, sErr := SanitizePath(dir, params.Path)
 		if sErr == nil {
 			safePath = sp
 			allowed = true

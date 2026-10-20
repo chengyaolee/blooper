@@ -16,7 +16,7 @@ const (
 
 // ApprovalSubmitter is an interface for queueing actions that require human sign-off.
 type ApprovalSubmitter interface {
-	Submit(agentName, toolName, arguments string) string
+	Submit(ctx context.Context, agentName, toolName, arguments string) string
 }
 
 // Agent represents an executing agent instance.
@@ -123,7 +123,7 @@ func (a *Agent) Run(ctx context.Context, userMessage string) (string, error) {
 			if tool.RequiresApproval() {
 				appID := "untracked"
 				if a.ApprovalHandler != nil {
-					appID = a.ApprovalHandler.Submit(a.Config.Name, tc.Function.Name, tc.Function.Arguments)
+					appID = a.ApprovalHandler.Submit(ctx, a.Config.Name, tc.Function.Name, tc.Function.Arguments)
 				}
 				a.conversationHistory = append(a.conversationHistory, llm.ChatMessage{
 					Role:       "tool",
@@ -213,7 +213,7 @@ func (a *Agent) RunStream(ctx context.Context, userMessage string, out chan<- ll
 				if tool.RequiresApproval() {
 					appID := "untracked"
 					if a.ApprovalHandler != nil {
-						appID = a.ApprovalHandler.Submit(a.Config.Name, tc.Function.Name, tc.Function.Arguments)
+						appID = a.ApprovalHandler.Submit(ctx, a.Config.Name, tc.Function.Name, tc.Function.Arguments)
 					}
 					// Send approval chunk to UI stream
 					sendChunk(ctx, out, llm.StreamChunk{

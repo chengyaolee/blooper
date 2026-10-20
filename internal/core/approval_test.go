@@ -1,13 +1,14 @@
 package core
 
 import (
+	"context"
 	"testing"
 )
 
 func TestApprovalQueue(t *testing.T) {
 	q := NewApprovalQueue()
 
-	id := q.Submit("agent_creator", "create_agent_config", `{"name":"lead_agent"}`)
+	id := q.Submit(context.Background(), "agent_creator", "create_agent_config", `{"name":"lead_agent"}`)
 	if id == "" {
 		t.Fatalf("expected non-empty approval ID")
 	}

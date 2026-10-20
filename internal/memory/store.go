@@ -19,6 +19,9 @@ func Open(dbPath string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
+	// ponytail: single connection serializes all writes (no SQLITE_BUSY between concurrent agents);
+	// switch to WAL + busy_timeout if read throughput ever matters.
+	db.SetMaxOpenConns(1)
 
 	// Create schema
 	schema := `
@@ -34,10 +37,14 @@ func Open(dbPath string) (*Store, error) {
 	CREATE VIRTUAL TABLE IF NOT EXISTS conversations_fts USING fts5(
 		user_query, summary, metadata, content='conversations', content_rowid='id'
 	);
-	`
+	` + taskGraphSchema + traceSchema
 	if _, err := db.Exec(schema); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("failed to create schema: %w", err)
+	}
+	if err := migrate(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to migrate schema: %w", err)
 	}
 
 	return &Store{db: db}, nil

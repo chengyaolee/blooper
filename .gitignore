@@ -32,8 +32,8 @@ go.work.sum
 # .vscode/
 
 # Blooper
-blooper
-blooper-linux-amd64
+/blooper
+/blooper-linux-amd64
 data/
 user_agents/*.yaml
 *.db

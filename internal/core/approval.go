@@ -1,10 +1,12 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/chengyaolee/blooper/internal/trace"
 	"github.com/google/uuid"
 )
 
@@ -14,6 +16,7 @@ type ApprovalItem struct {
 	ToolName  string
 	Arguments string
 	Status    string // "pending", "approved", "rejected"
+	RunID     string // trace run that requested the action, for linking the human decision
 	CreatedAt time.Time
 }
 
@@ -28,7 +31,7 @@ func NewApprovalQueue() *ApprovalQueue {
 	}
 }
 
-func (q *ApprovalQueue) Submit(agentName, toolName, arguments string) string {
+func (q *ApprovalQueue) Submit(ctx context.Context, agentName, toolName, arguments string) string {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
@@ -39,6 +42,7 @@ func (q *ApprovalQueue) Submit(agentName, toolName, arguments string) string {
 		ToolName:  toolName,
 		Arguments: arguments,
 		Status:    "pending",
+		RunID:     trace.FromContext(ctx).RunID(),
 		CreatedAt: time.Now(),
 	}
 	q.items[id] = item

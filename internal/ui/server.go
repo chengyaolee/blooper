@@ -9,12 +9,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/chengyaolee/blooper/internal/agent"
 	"github.com/chengyaolee/blooper/internal/core"
 	"github.com/chengyaolee/blooper/internal/llm"
 	"github.com/chengyaolee/blooper/internal/memory"
 	"github.com/chengyaolee/blooper/internal/tools"
+	"github.com/chengyaolee/blooper/internal/trace"
 )
 
 // ServerConfig holds the configuration for the UI server.
@@ -228,7 +230,11 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	agentInstance.SetApprovalHandler(s.approvalQueue)
 
 	chunkChan := make(chan llm.StreamChunk, 20)
-	ctx := r.Context()
+	// Each chat turn is a root trace run; anything it spawns (delegation, goals) nests under it.
+	ctx, run := trace.Start(r.Context(), s.memoryStore, trace.Info{
+		Agent: agentName, Role: "chat", Model: cfg.Model.Preferred, Input: payload.Message, Config: cfg,
+	})
+	var streamErr error
 
 	// Run agent via scheduler to respect concurrency boundaries
 	err := s.scheduler.Submit(ctx, func(taskCtx context.Context) {
@@ -245,6 +251,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	for chunk := range chunkChan {
 		if chunk.Error != nil {
+			streamErr = chunk.Error
 			data, _ := json.Marshal(map[string]string{"error": chunk.Error.Error()})
 			fmt.Fprintf(w, "data: %s\n\n", data)
 			flusher.Flush()
@@ -261,7 +268,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		for _, tc := range chunk.ToolCalls {
 			tool, found := s.toolRegistry.Get(tc.Function.Name)
 			if found && tool.RequiresApproval() {
-				appID := s.approvalQueue.Submit(agentName, tc.Function.Name, tc.Function.Arguments)
+				appID := s.approvalQueue.Submit(ctx, agentName, tc.Function.Name, tc.Function.Arguments)
 				appData, _ := json.Marshal(map[string]interface{}{
 					"approval": map[string]string{
 						"id":        appID,
@@ -277,6 +284,10 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "data: [DONE]\n\n")
 	flusher.Flush()
+	if streamErr == nil {
+		streamErr = ctx.Err()
+	}
+	run.End(fullResponse.String(), streamErr)
 
 	// Async conversation memory saving
 	if s.memoryStore != nil && fullResponse.Len() > 0 {
@@ -333,6 +344,7 @@ func (s *Server) handleApprovalAction(w http.ResponseWriter, r *http.Request) {
 		}
 
 		result, err := tool.Execute(r.Context(), json.RawMessage(item.Arguments))
+		s.logApproval(item, "approved", result, err)
 		if err != nil {
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
@@ -351,11 +363,33 @@ func (s *Server) handleApprovalAction(w http.ResponseWriter, r *http.Request) {
 
 	if action == "reject" {
 		_ = s.approvalQueue.Reject(id)
+		s.logApproval(item, "rejected", nil, nil)
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "rejected"})
 		return
 	}
 
 	http.Error(w, "Unknown action", http.StatusBadRequest)
+}
+
+// logApproval records a human decision on a gated tool call as a step of the run that requested
+// it. The latency is how long the human took to decide - a direct signal for RL from human feedback.
+func (s *Server) logApproval(item *core.ApprovalItem, decision string, result *tools.ToolResult, err error) {
+	if s.memoryStore == nil || item.RunID == "" {
+		return
+	}
+	var args any = json.RawMessage(item.Arguments)
+	if !json.Valid([]byte(item.Arguments)) {
+		args = item.Arguments
+	}
+	st := memory.Step{
+		RunID: item.RunID, Kind: "human_approval", Name: item.ToolName, Input: args,
+		Output:    map[string]any{"decision": decision, "result": result, "approval_id": item.ID},
+		LatencyMS: time.Since(item.CreatedAt).Milliseconds(),
+	}
+	if err != nil {
+		st.Error = err.Error()
+	}
+	_ = s.memoryStore.LogStep(st)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
