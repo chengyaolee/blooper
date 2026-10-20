@@ -42,9 +42,11 @@ type ollamaChatRequest struct {
 }
 
 type ollamaChatResponse struct {
-	Model     string        `json:"model"`
-	Message   ollamaMessage `json:"message"`
-	Done      bool          `json:"done"`
+	Model           string        `json:"model"`
+	Message         ollamaMessage `json:"message"`
+	Done            bool          `json:"done"`
+	PromptEvalCount int           `json:"prompt_eval_count"`
+	EvalCount       int           `json:"eval_count"`
 }
 
 func (c *OllamaClient) mapMessages(messages []ChatMessage) []ollamaMessage {
@@ -116,6 +118,7 @@ func (c *OllamaClient) Generate(ctx context.Context, req *ChatRequest) (*ChatRes
 		},
 		Done:  ollamaResp.Done,
 		Model: ollamaResp.Model,
+		Usage: Usage{PromptTokens: ollamaResp.PromptEvalCount, CompletionTokens: ollamaResp.EvalCount},
 	}, nil
 }
 
@@ -177,6 +180,7 @@ func (c *OllamaClient) Stream(ctx context.Context, req *ChatRequest, out chan<- 
 			Content:   ollamaResp.Message.Content,
 			ToolCalls: ollamaResp.Message.ToolCalls,
 			Done:      ollamaResp.Done,
+			Usage:     Usage{PromptTokens: ollamaResp.PromptEvalCount, CompletionTokens: ollamaResp.EvalCount},
 		}
 
 		if ollamaResp.Done {

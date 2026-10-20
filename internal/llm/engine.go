@@ -53,6 +53,13 @@ type ChatResponse struct {
     Message   ChatMessage `json:"message"`
     Done      bool        `json:"done"`
     Model     string      `json:"model"`
+    Usage     Usage       `json:"usage"`
+}
+
+// Usage holds token accounting reported by the engine (zero when unknown).
+type Usage struct {
+    PromptTokens     int `json:"prompt_tokens"`
+    CompletionTokens int `json:"completion_tokens"`
 }
 
 // StreamChunk is a single token/chunk in a streaming response.
@@ -60,6 +67,7 @@ type StreamChunk struct {
     Content   string     `json:"content"`
     ToolCalls []ToolCall `json:"tool_calls,omitempty"`
     Done      bool       `json:"done"`
+    Usage     Usage      `json:"usage"` // set on the final chunk
     Error     error      `json:"-"`
 }
 

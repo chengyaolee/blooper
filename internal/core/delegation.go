@@ -6,7 +6,9 @@ import (
 
 	"github.com/chengyaolee/blooper/internal/agent"
 	"github.com/chengyaolee/blooper/internal/llm"
+	"github.com/chengyaolee/blooper/internal/memory"
 	"github.com/chengyaolee/blooper/internal/tools"
+	"github.com/chengyaolee/blooper/internal/trace"
 )
 
 type DelegationRequest struct {
@@ -25,13 +27,15 @@ type Delegator struct {
 	agentRegistry *agent.AgentRegistry
 	engine        llm.InferenceEngine
 	toolRegistry  *tools.ToolRegistry
+	store         *memory.Store // optional: records delegated runs as children of the caller's run
 }
 
-func NewDelegator(registry *agent.AgentRegistry, engine llm.InferenceEngine, toolReg *tools.ToolRegistry) *Delegator {
+func NewDelegator(registry *agent.AgentRegistry, engine llm.InferenceEngine, toolReg *tools.ToolRegistry, store *memory.Store) *Delegator {
 	return &Delegator{
 		agentRegistry: registry,
 		engine:        engine,
 		toolRegistry:  toolReg,
+		store:         store,
 	}
 }
 
@@ -64,7 +68,9 @@ func (d *Delegator) DelegateRequest(ctx context.Context, req DelegationRequest) 
 	}
 	a := agent.NewAgent(cfg, d.engine, toolReg)
 
+	ctx, run := trace.Start(ctx, d.store, trace.Info{Agent: cfg.Name, Role: "delegate", Model: cfg.Model.Preferred, Input: req.Task, Config: cfg})
 	result, err := a.Run(ctx, req.Task)
+	run.End(result, err)
 	if err != nil {
 		return &DelegationResult{Error: err.Error()}, nil
 	}
