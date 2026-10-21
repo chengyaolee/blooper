@@ -10,7 +10,7 @@ import (
 	"github.com/chengyaolee/blooper/internal/memory"
 )
 
-// RecallTool allows agents to recall past interactions and knowledge from persistent SQLite memory.
+// RecallTool allows agents to recall past interactions and knowledge from persistent memory (hybrid BM25 + vector search via ragout).
 type RecallTool struct {
 	store *memory.Store
 }
