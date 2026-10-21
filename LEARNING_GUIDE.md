@@ -1,72 +1,96 @@
-# Blooper: Complete Hands-On Engineering & Learning Guide
+# Blooper: The Step-by-Step Hands-On Engineering Workbook
 
-Welcome to the comprehensive, hands-on engineering guide for **Blooper**. 
+Welcome! This workbook is designed specifically to help you build and understand the advanced parts of Blooper **step-by-step**. 
 
-This guide is designed for developers who want to learn how modern AI agent infrastructure, anti-bot browser automation, KV cache management, and protocol adapters work under the hood.
-
-Every milestone below contains:
-1. **The Objective**: What you are building and why.
-2. **File Map**: Exactly which files to edit, create, or test.
-3. **Architecture Blueprint**: Concrete code skeletons, imports, and data structures.
-4. **Execution Command**: The exact terminal command to run and verify.
-5. **Expected Output**: What success and failure look like.
-6. **Common Pitfalls**: What bugs to avoid.
+Every milestone is broken down into **numbered micro-tasks**. You will never have to guess which file to touch, what lines of code to write, or why you are writing them.
 
 ---
 
-## Table of Contents
-* [Track 1: Stealth Browser Automation & Bot Evasion](#track-1-stealth-browser-automation--bot-evasion)
-  * [Milestone 1.1: Establishing the Baseline Benchmark](#milestone-11-establishing-the-baseline-benchmark)
-  * [Milestone 1.2: Upgrading to Modern Headless (`--headless=new`)](#milestone-12-upgrading-to-modern-headless---headlessnew)
-  * [Milestone 1.3: Suppressing Automation Flags & Webdriver](#milestone-13-suppressing-automation-flags--webdriver)
-  * [Milestone 1.4: Pre-Navigation Script Injection (`go-rod/stealth`)](#milestone-14-pre-navigation-script-injection-go-rodstealth)
-  * [Milestone 1.5: Humanizing Input Dynamics & Typing Jitter](#milestone-15-humanizing-input-dynamics--typing-jitter)
-* [Track 2: Custom Inference Engine & KV Cache Management](#track-2-custom-inference-engine--kv-cache-management)
-  * [Milestone 2.1: Mathematical Sizing & Hardware VRAM Budgeting](#milestone-21-mathematical-sizing--hardware-vram-budgeting)
-  * [Milestone 2.2: Building the Slot-Based KV Cache Manager](#milestone-22-building-the-slot-based-kv-cache-manager)
-  * [Milestone 2.3: Implementing Prefix Caching for Shared Agent Prompts](#milestone-23-implementing-prefix-caching-for-shared-agent-prompts)
-* [Track 3: Model Context Protocol (MCP) Client](#track-3-model-context-protocol-mcp-client)
-  * [Milestone 3.1: Building the Stdio JSON-RPC 2.0 Transport](#milestone-31-building-the-stdio-json-rpc-20-transport)
-  * [Milestone 3.2: Wrapping MCP Tools into Blooper's Tool Registry](#milestone-32-wrapping-mcp-tools-into-bloopers-tool-registry)
-* [Track 4: Hybrid Search Memory (BM25 + Local Vector Embeddings)](#track-4-hybrid-search-memory-bm25--local-vector-embeddings)
-  * [Milestone 4.1: Generating Local Embeddings with Ollama](#milestone-41-generating-local-embeddings-with-ollama)
-  * [Milestone 4.2: Vector Similarity & Reciprocal Rank Fusion (RRF)](#milestone-42-vector-similarity--reciprocal-rank-fusion-rrf)
+## 🧭 Your Learning Dashboard
+
+Track your progress by checking off tasks as you finish them:
+
+- [ ] **Track 1: Stealth Browser Automation & Anti-Bot Evasion**
+  - [ ] [Task 1.1: Capture Your Baseline Bot-Failure Screenshot](#task-11-capture-your-baseline-bot-failure-screenshot)
+  - [ ] [Task 1.2: Upgrade to Chrome's New Headless Engine](#task-12-upgrade-to-chromes-new-headless-engine)
+  - [ ] [Task 1.3: Eliminate the `navigator.webdriver` Flag](#task-13-eliminate-the-navigatorwebdriver-flag)
+  - [ ] [Task 1.4: Inject `go-rod/stealth` Pre-Navigation Scripts](#task-14-inject-go-rodstealth-pre-navigation-scripts)
+  - [ ] [Task 1.5: Build Humanized Typing Dynamics](#task-15-build-humanized-typing-dynamics)
+- [ ] **Track 2: Custom Inference Engine & KV Cache Management**
+  - [ ] [Task 2.1: Calculate Your VRAM Budget on Paper](#task-21-calculate-your-vram-budget-on-paper)
+  - [ ] [Task 2.2: Implement the Slot-Based KV Cache Manager](#task-22-implement-the-slot-based-kv-cache-manager)
+  - [ ] [Task 2.3: Build an LRU Eviction Policy](#task-23-build-an-lru-eviction-policy)
+- [ ] **Track 3: Model Context Protocol (MCP) Client**
+  - [ ] [Task 3.1: Build the Subprocess JSON-RPC Transport](#task-31-build-the-subprocess-json-rpc-transport)
+  - [ ] [Task 3.2: Implement the Tool Adapter for Blooper](#task-32-implement-the-tool-adapter-for-blooper)
+  - [ ] [Task 3.3: Write an End-to-End Test with a Mock MCP Server](#task-33-write-an-end-to-end-test-with-a-mock-mcp-server)
+  - [ ] [Task 3.4: Connect External Community MCP Servers](#task-34-connect-external-community-mcp-servers)
+- [ ] **Track 4: Hybrid Search Memory (BM25 + Local Vector Embeddings)**
+  - [ ] [Task 4.1: Generate Local Embeddings with Ollama](#task-41-generate-local-embeddings-with-ollama)
+  - [ ] [Task 4.2: Implement Pure-Go Cosine Similarity & RRF](#task-42-implement-pure-go-cosine-similarity--rrf)
+
+---
+
+# 🛠️ Pre-Flight Check: Verify Your Environment
+
+Before typing any code, open your terminal and run these four commands to ensure your environment is ready:
+
+#### Check 1: Verify Go Compiler
+```bash
+go version
+```
+* **Expected Output**: `go version go1.22` (or newer).
+* **If it fails**: Install Go from [golang.org](https://go.dev).
+
+#### Check 2: Verify Google Chrome Installation
+* **On macOS**: Run `ls -d "/Applications/Google Chrome.app"`
+  * **Expected Output**: `/Applications/Google Chrome.app`
+* **On Linux**: Run `google-chrome --version` or `which chromium`
+
+#### Check 3: Verify Blooper Current Tests Pass
+```bash
+cd /Users/chengyao/Documents/GitHub/blooper
+go test ./...
+```
+* **Expected Output**: `PASS` across all internal packages (`agent`, `core`, `memory`, `tools`).
+
+#### Check 4: Verify Ollama is Reachable
+```bash
+curl http://localhost:11434/api/tags
+```
+* **Expected Output**: A JSON array of your locally installed models.
 
 ---
 
 # Track 1: Stealth Browser Automation & Bot Evasion
 
-```
-                    HOW DETECTORS SPOT YOUR BROWSER
-                    
-   Default Headless Rod                         Stealth-Patched Rod
-  ┌──────────────────────────────┐             ┌──────────────────────────────┐
-  │ navigator.webdriver: true   │             │ navigator.webdriver: undef   │
-  │ WebGL: SwiftShader (CPU)    │    ───►     │ WebGL: Apple M5 / GTX 1080 Ti│
-  │ Plugins length: 0            │             │ Plugins length: 3 (PDF/etc)  │
-  │ Keystroke delay: 0ms         │             │ Keystroke delay: 40-110ms    │
-  └──────────────────────────────┘             └──────────────────────────────┘
-             [BLOCKED]                                    [PASSED]
+Websites protect themselves against scrapers and AI agents using anti-bot services like **Cloudflare Turnstile, DataDome, and Akamai**. These services run JavaScript tests in the background to detect whether a browser is operated by a human or automation software.
+
+In this track, you will turn Blooper's browser from an **easily detected bot** into an **undetectable, human-like browser**.
+
+---
+
+## Task 1.1: Capture Your Baseline Bot-Failure Screenshot
+
+### The Goal
+Before changing any browser code, we need to create an automated test that opens a bot-detection test page (`https://bot.sannysoft.com`), takes a screenshot, and saves it so you can see which checks currently fail.
+
+---
+
+### Step 1.1.1: Create the Test File
+* **Folder**: `internal/tools/`
+* **File to Create**: `internal/tools/browser_test.go`
+
+In terminal or your editor, create the file:
+```bash
+touch internal/tools/browser_test.go
 ```
 
 ---
 
-### Milestone 1.1: Establishing the Baseline Benchmark
+### Step 1.1.2: Write the Test Code
+Open [internal/tools/browser_test.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/browser_test.go) and paste the following code:
 
-#### Objective
-Run our existing browser tool against an anti-bot test site (`https://bot.sannysoft.com`) and produce a screenshot showing which browser features fail the bot test.
-
-#### File Map
-* **Existing File**: `internal/tools/browser.go` (the browser implementation)
-* **New File to Add**: `internal/tools/browser_test.go` (the test harness)
-* **Output Artifact**: `data/screenshots/screenshot_*.png` (visual evidence)
-
-#### Implementation Steps
-1. Create `internal/tools/browser_test.go`.
-2. Instantiate `NewBrowserTool(true)` (runs in headless mode).
-3. Call `Execute(ctx, payload)` asking for a screenshot of `https://bot.sannysoft.com`.
-
-#### Code Blueprint (`internal/tools/browser_test.go`)
 ```go
 package tools
 
@@ -78,199 +102,303 @@ import (
 )
 
 func TestBrowserDetection(t *testing.T) {
-	// Step 1: Create the browser tool in headless mode
+	// 1. Create a browser tool instance in headless mode (true)
 	tool := NewBrowserTool(true)
-	defer tool.Close()
+	defer tool.Close() // Ensures Chrome process is killed when test completes
 
-	// Step 2: Prepare the screenshot action payload
+	// 2. Prepare the JSON request asking the browser to screenshot Sannysoft
 	payload, err := json.Marshal(map[string]string{
 		"action": "screenshot",
 		"url":    "https://bot.sannysoft.com",
 	})
 	if err != nil {
-		t.Fatalf("failed to marshal payload: %v", err)
+		t.Fatalf("Failed to create JSON payload: %v", err)
 	}
 
-	// Step 3: Allow up to 45 seconds for page load and asset rendering
+	// 3. Set a generous timeout (45s) for network load and rendering
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 
-	t.Log("Navigating to https://bot.sannysoft.com and taking screenshot...")
+	t.Log("Launching browser, navigating to https://bot.sannysoft.com...")
 
-	// Step 4: Execute the browser tool
+	// 4. Run the browser tool
 	result, err := tool.Execute(ctx, payload)
 	if err != nil {
-		t.Fatalf("tool execution failed: %v", err)
+		t.Fatalf("Browser execution failed: %v", err)
 	}
 	if result.Error != "" {
-		t.Fatalf("tool returned error: %s", result.Error)
+		t.Fatalf("Browser returned an error: %s", result.Error)
 	}
 
-	t.Logf("Result: %s", result.Output)
+	// 5. Output the result message (contains the screenshot file path)
+	t.Logf("Success! %s", result.Output)
 }
 ```
 
-#### How to Run & Verify
+#### Line-by-Line Explanation:
+* **Line 10 (`NewBrowserTool(true)`)**: Calls our constructor in `browser.go`. `true` means headless (no visible window).
+* **Line 11 (`defer tool.Close()`)**: Important! If you omit this, Chrome stays alive in background memory (~400MB leak).
+* **Line 14–17 (`json.Marshal(...)`)**: Blooper's tools receive arguments as JSON from the LLM. We mimic that here.
+* **Line 21 (`context.WithTimeout(...)`)**: Prevents the test from hanging forever if Wi-Fi drops.
+* **Line 26 (`tool.Execute(...)`)**: The heart of the tool. It launches Chrome, loads the page, takes a screenshot, and saves it into `data/screenshots/`.
+
+---
+
+### Step 1.1.3: Run the Test
+In your terminal, execute:
 ```bash
 go test -v -run TestBrowserDetection ./internal/tools
 ```
-Open the screenshot:
+
+#### Expected Terminal Output:
+```
+=== RUN   TestBrowserDetection
+    browser_test.go:24: Launching browser, navigating to https://bot.sannysoft.com...
+    browser_test.go:35: Success! Screenshot captured and saved to data/screenshots/screenshot_1726880000.png (124000 bytes)
+--- PASS: TestBrowserDetection (5.12s)
+PASS
+ok  	github.com/chengyaolee/blooper/internal/tools	5.312s
+```
+
+---
+
+### Step 1.1.4: Inspect the Screenshot
+Open the newly created screenshot in Preview:
 ```bash
 open data/screenshots/screenshot_*.png
 ```
 
-#### What to Look For
-* `WebDriver (New)`: **RED (Failed - present)**
-* `Chrome`: **RED**
-* `User Agent`: Contains `HeadlessChrome` or generic headless markers.
+#### What You Will See:
+Look at the table in the screenshot:
+1. **`WebDriver (New)`**: Highlighted in **RED** (`present (failed)`).
+   * *Why?* Chrome automatically tells websites that it is automated.
+2. **`Chrome`**: Highlighted in **RED**.
+   * *Why?* Normal `window.chrome` properties are missing.
+3. **`User Agent`**: Mentions `HeadlessChrome`.
+
+**You have now established your baseline!** Keep this screenshot open to compare against future steps.
 
 ---
 
-### Milestone 1.2: Upgrading to Modern Headless (`--headless=new`)
+## Task 1.2: Upgrade to Chrome's New Headless Engine
 
-#### Objective
-Legacy `--headless` runs a stripped-down browser shell that has distinct rendering quirks. Chrome 112+ introduced `--headless=new`, which uses the full desktop Chrome browser pipeline rendered into a memory buffer.
+### The Goal
+In 2023, Google introduced `--headless=new`. 
+* **Old Headless**: A stripped-down, separate C++ engine. Easily fingerprinted by websites because text fonts, WebGL, and CSS behave differently than real Chrome.
+* **New Headless (`--headless=new`)**: The exact full Chrome desktop browser, rendered into an off-screen memory buffer.
 
-#### File Map
-* **File to Edit**: `internal/tools/browser.go` (inside `getBrowser()`, lines ~80–95)
+We will update our browser launcher to use `--headless=new`.
 
-#### Implementation Steps
-1. Locate `l := launcher.New()` in `getBrowser()`.
-2. Notice `Headless(t.headless)`. In Rod, `Headless(true)` sets the old `--headless` flag.
-3. Replace it by explicitly setting `--headless=new`.
+---
 
-#### Code Blueprint (`internal/tools/browser.go`)
+### Step 1.2.1: Open `internal/tools/browser.go`
+Open [internal/tools/browser.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/browser.go) and navigate to lines ~80–92 (inside the `getBrowser()` method).
+
+You will see:
 ```go
-// Inside getBrowser():
-l := launcher.New().
-	Set("headless", "new"). // <-- Replaces Headless(true)
-	Set("no-sandbox").
-	Set("disable-gpu").
-	Set("disable-dev-shm-usage")
+	// Launch controlled headless browser
+	l := launcher.New().
+		Headless(t.headless).
+		Set("no-sandbox").
+		Set("disable-gpu").
+		Set("disable-dev-shm-usage")
 ```
-
-#### How to Run & Verify
-```bash
-go test -v -run TestBrowserDetection ./internal/tools
-open data/screenshots/screenshot_*.png
-```
-Compare this screenshot with Milestone 1.1. Notice how font smoothing, window dimensions, and media rendering now match genuine desktop Chrome.
 
 ---
 
-### Milestone 1.3: Suppressing Automation Flags & Webdriver
+### Step 1.2.2: Make the Edit
+Replace `Headless(t.headless)` with `.Set("headless", "new")`.
 
-#### Objective
-Chrome sets `window.navigator.webdriver = true` whenever DevTools or automation controls are connected. We must tell the Blink engine to disable automation indicators.
-
-#### File Map
-* **File to Edit**: `internal/tools/browser.go` (inside `getBrowser()`)
-
-#### Implementation Steps
-1. Add Chrome launcher flag `disable-blink-features=AutomationControlled`.
-2. Add a realistic desktop User-Agent string (matching macOS or Linux).
-3. Set a standard desktop window size (e.g. `1920,1080`).
-
-#### Code Blueprint (`internal/tools/browser.go`)
+Your code should now look like this:
 ```go
-// Inside getBrowser():
-l := launcher.New().
-	Set("headless", "new").
-	Set("disable-blink-features", "AutomationControlled"). // <-- Key anti-detection flag
-	Set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36").
-	Set("window-size", "1920,1080").
-	Set("no-sandbox").
-	Set("disable-dev-shm-usage")
+	// Launch controlled headless browser using modern headless=new engine
+	l := launcher.New().
+		Set("headless", "new").
+		Set("no-sandbox").
+		Set("disable-gpu").
+		Set("disable-dev-shm-usage")
 ```
-
-#### How to Run & Verify
-```bash
-go test -v -run TestBrowserDetection ./internal/tools
-open data/screenshots/screenshot_*.png
-```
-Look at the **`WebDriver`** row in Sannysoft. It should now show **green** (`missing (passed)`)!
 
 ---
 
-### Milestone 1.4: Pre-Navigation Script Injection (`go-rod/stealth`)
+### Step 1.2.3: Re-Run the Test
+```bash
+go test -v -run TestBrowserDetection ./internal/tools
+```
 
-#### Objective
-Even with flags, anti-bot scripts query deep browser properties: `navigator.plugins`, `navigator.languages`, WebGL vendor (`SwiftShader` vs hardware GPU), and `Notification.permission`. 
-We inject `go-rod/stealth` before any page script executes.
+---
 
-#### File Map
-* **File to Edit**: `internal/tools/browser.go`
-* **Dependency**: `github.com/go-rod/stealth` (already fetched)
+### Step 1.2.4: Inspect the New Screenshot
+```bash
+open $(ls -t data/screenshots/*.png | head -n 1)
+```
+*(This command opens only the most recent screenshot)*
 
-#### Implementation Steps
-1. Import `"github.com/go-rod/stealth"`.
-2. When creating a new page in `Execute()` (`case "navigate"` and `case "screenshot"`), evaluate `stealth.JS` using `page.EvalOnNewDocument()`.
-3. `EvalOnNewDocument` guarantees the JavaScript shims run **before** Sannysoft or Cloudflare scripts can query the environment.
+#### What Changed?
+* Font antialiasing, CSS layout dimensions, and screen metrics now match authentic Chrome.
+* Notice that `WebDriver` is still red. We fix that next!
 
-#### Code Blueprint (`internal/tools/browser.go`)
+---
+
+## Task 1.3: Eliminate the `navigator.webdriver` Flag
+
+### The Goal
+When automation software controls Chrome, Chrome sets the JavaScript variable `window.navigator.webdriver = true`. 95% of bot detectors simply check `if (navigator.webdriver) { block(); }`.
+
+We will instruct Chrome's Blink engine to suppress this flag completely.
+
+---
+
+### Step 1.3.1: Open `internal/tools/browser.go`
+Locate the launcher setup in `getBrowser()` again.
+
+---
+
+### Step 1.3.2: Add Anti-Detection Launcher Flags
+Add three key flags:
+1. `disable-blink-features=AutomationControlled` (removes `navigator.webdriver`).
+2. A real desktop `user-agent` (removes `HeadlessChrome` from the request header).
+3. A standard desktop `window-size` (`1920,1080`).
+
+Edit `getBrowser()` so it looks like this:
+```go
+	l := launcher.New().
+		Set("headless", "new").
+		Set("disable-blink-features", "AutomationControlled").
+		Set("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36").
+		Set("window-size", "1920,1080").
+		Set("no-sandbox").
+		Set("disable-dev-shm-usage")
+```
+
+---
+
+### Step 1.3.3: Re-Run the Test
+```bash
+go test -v -run TestBrowserDetection ./internal/tools
+```
+
+---
+
+### Step 1.3.4: Inspect the Screenshot
+```bash
+open $(ls -t data/screenshots/*.png | head -n 1)
+```
+
+#### What Changed?
+Look at the **`WebDriver (New)`** row in Sannysoft:
+* It should now be **GREEN (`missing (passed)`)**!
+* Your browser no longer announces to the world that it is automated.
+
+---
+
+## Task 1.4: Inject `go-rod/stealth` Pre-Navigation Scripts
+
+### The Goal
+While `navigator.webdriver` is now gone, sophisticated anti-bot scripts (like Cloudflare Turnstile) check deeper properties:
+1. `navigator.plugins`: In headless Chrome, this is an empty array (`[]`). Real browsers have default plugins (PDF viewer, etc.).
+2. `navigator.languages`: Often empty or misconfigured in headless mode.
+3. WebGL Vendor: Often reports `Google SwiftShader` (software CPU rendering) instead of a real GPU.
+
+We will inject `go-rod/stealth` scripts into every new tab **before** any website JavaScript runs.
+
+---
+
+### Step 1.4.1: Check Dependencies
+Rod's stealth library is already part of our `go.mod`. You can verify by running:
+```bash
+go list -m github.com/go-rod/stealth
+```
+
+---
+
+### Step 1.4.2: Import Stealth in `internal/tools/browser.go`
+Open [internal/tools/browser.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/browser.go).
+
+At the top of the file, add the import:
 ```go
 import (
 	// ... existing imports ...
 	"github.com/go-rod/stealth"
 )
-
-// Inside Execute(), right after page is created:
-page, err := browser.Context(ctxTimeout).Page(proto.TargetCreateTarget{URL: params.URL})
-if err != nil {
-	return &ToolResult{Error: err.Error()}, nil
-}
-defer page.Close()
-
-// Inject stealth scripts before page loads!
-_, err = page.EvalOnNewDocument(stealth.JS)
-if err != nil {
-	// Log warning or continue
-}
-
-_ = page.WaitLoad()
 ```
-
-#### How to Run & Verify
-```bash
-go test -v -run TestBrowserDetection ./internal/tools
-open data/screenshots/screenshot_*.png
-```
-**The Milestone Goal**: All major rows on Sannysoft (`WebDriver`, `Chrome`, `Permissions`, `Plugins`, `WebGL`) should now be **GREEN**!
 
 ---
 
-### Milestone 1.5: Humanizing Input Dynamics & Typing Jitter
+### Step 1.4.3: Inject Stealth Script Before Page Loads
+Scroll down to `Execute()`.
 
-#### Objective
-Bot detectors record typing cadences in forms. If 30 characters appear in 2 milliseconds, the request gets challenged with a CAPTCHA. We create a helper that types with natural randomized pauses.
+Find the block handling `case "navigate":` and `case "screenshot":`:
+```go
+		page, err := browser.Context(ctxTimeout).Page(proto.TargetCreateTarget{URL: params.URL})
+		if err != nil {
+			return &ToolResult{Error: fmt.Sprintf("failed to load page %s: %v", params.URL, err)}, nil
+		}
+		defer page.Close()
+```
 
-#### File Map
-* **File to Edit**: `internal/tools/browser.go`
+Immediately after `defer page.Close()`, add this line:
+```go
+		// Injects stealth shims into the window BEFORE the page scripts execute
+		_, _ = page.EvalOnNewDocument(stealth.JS)
+```
 
-#### Implementation Steps
-1. Write a private helper function `humanType(el *rod.Element, text string) error`.
-2. Loop over each character, call `el.Input(string(char))`, and sleep a randomized duration between 40ms and 110ms.
-3. In `Execute()` for a new action `"fill"`, invoke `humanType`.
+Make sure to add this in both `case "navigate":` and `case "screenshot":`!
 
-#### Code Blueprint (`internal/tools/browser.go`)
+#### Why `EvalOnNewDocument`?
+Standard `page.Eval()` executes JavaScript *after* the page has already loaded (too late — bot scripts have already detected you!). `EvalOnNewDocument` tells Chrome to execute `stealth.JS` at the very instant the JavaScript context is initialized, before any external script can run.
+
+---
+
+### Step 1.4.4: Run the Test to Verify
+```bash
+go test -v -run TestBrowserDetection ./internal/tools
+open $(ls -t data/screenshots/*.png | head -n 1)
+```
+
+#### Final Sannysoft Result:
+* `WebDriver (New)`: **GREEN**
+* `Chrome`: **GREEN**
+* `Permissions`: **GREEN**
+* `Plugins`: **GREEN**
+* `WebGL Vendor`: **GREEN**
+
+**Congratulations!** Your browser is now stealth-grade and will not be blocked by standard bot detection filters.
+
+---
+
+## Task 1.5: Build Humanized Typing Dynamics
+
+### The Goal
+If an agent needs to type into a search box or login form, sending the entire text string instantaneously in 0 milliseconds will trigger behavioral bot detection. We will write a helper function that mimics human typing speed.
+
+---
+
+### Step 1.5.1: Write the `humanType` Function
+Open [internal/tools/browser.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/browser.go).
+
+Add this function near the bottom of the file:
 ```go
 import (
+	// Add math/rand to your imports if not present
 	"math/rand"
-	"time"
 )
 
+// humanType types text into an element with randomized intervals mimicking human keystrokes.
 func humanType(el *rod.Element, text string) error {
 	for _, char := range text {
+		// 1. Type a single character
 		if err := el.Input(string(char)); err != nil {
 			return err
 		}
-		// Random delay between 40ms and 110ms per keystroke
+
+		// 2. Sleep between 40ms and 110ms per keystroke
 		delay := time.Duration(40+rand.Intn(70)) * time.Millisecond
 		time.Sleep(delay)
-		
-		// 5% chance of a longer pause (mimicking human hesitation)
+
+		// 3. 5% chance of a longer thinking pause (200ms - 350ms)
 		if rand.Float32() < 0.05 {
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(time.Duration(200+rand.Intn(150)) * time.Millisecond)
 		}
 	}
 	return nil
@@ -279,83 +407,93 @@ func humanType(el *rod.Element, text string) error {
 
 ---
 
+### Step 1.5.2: Add a Form Fill Action to `Execute()`
+In `internal/tools/browser.go`, update `case "click":` to also support an action `"fill"`:
+
+```go
+	case "fill":
+		if params.Selector == "" {
+			return &ToolResult{Error: "selector required for fill action"}, nil
+		}
+		// Locate element on page
+		el, err := page.Element(params.Selector)
+		if err != nil {
+			return &ToolResult{Error: fmt.Sprintf("element %s not found: %v", params.Selector, err)}, nil
+		}
+		// Clear existing text and type human-like
+		_ = el.SelectAllText()
+		if err := humanType(el, params.Text); err != nil {
+			return &ToolResult{Error: fmt.Sprintf("typing failed: %v", err)}, nil
+		}
+		return &ToolResult{Output: fmt.Sprintf("Successfully typed text into %s", params.Selector)}, nil
+```
+
+---
+
 # Track 2: Custom Inference Engine & KV Cache Management
 
-```
-               THE KV CACHE LIFECYCLE FOR AGENTS
-               
-   [Agent System Prompt: 1,200 tokens] 
-                  │
-                  ▼ Prefill Phase (Computed Once)
-   ┌────────────────────────────────────────────────────────┐
-   │  Slot 0: Cached Key/Value Matrices (~150 MB in VRAM)   │
-   └────────────────────────────────────────────────────────┘
-                  │
-         Shared Prefix Link (Copy-on-Write)
-        ┌─────────┴─────────┐
-        ▼                   ▼
-   Agent A (Research)   Agent B (Email)
-   Appends Turn 1       Appends Turn 1
-   (+15 MB)             (+15 MB)
-```
+In this track, you will learn how large language models consume memory and implement a **real Key-Value (KV) cache slot allocator** with Least-Recently-Used (LRU) eviction.
 
 ---
 
-### Milestone 2.1: Mathematical Sizing & Hardware VRAM Budgeting
+## Task 2.1: Calculate Your VRAM Budget on Paper
 
-#### Objective
-Understand the exact formula governing Key-Value (KV) cache memory consumption so you can configure slot boundaries for both your M5 Pro (24GB) and Linux 1080 Ti (11GB).
+### The Mental Model
+When an LLM generates text token-by-token, it computes two matrices for every token in every layer: **Key ($K$)** and **Value ($V$)**. To avoid recalculating these for past tokens, they are stored in VRAM. This is the **KV Cache**.
 
-#### The Formula
 $$\text{KV Bytes per Token} = 2 \times \text{layers} \times \text{kv\_heads} \times \text{head\_dim} \times \text{precision\_bytes}$$
 
-Where:
-* $2$ accounts for both the **Key** and **Value** tensors.
-* $\text{layers}$: Number of transformer layers in the model.
-* $\text{kv\_heads}$: Number of Key-Value attention heads (in Grouped-Query Attention models like Qwen and Llama 3, this is typically 8, whereas query heads are 32).
-* $\text{head\_dim}$: Dimension per head (usually 128).
-* $\text{precision\_bytes}$: $2$ bytes for FP16 or BF16.
+### Your Target 1: NVIDIA GTX 1080 Ti (11 GB VRAM)
+Model: **Qwen 2.5 / 3 (8B)**
+* Layers = $32$
+* KV Heads = $8$
+* Head Dim = $128$
+* Precision = $2$ bytes (FP16)
 
-#### Sizing Exercise
-For **Qwen3 8B**:
-* Layers: 32
-* KV Heads: 8
-* Head Dim: 128
-* Precision: 2 bytes (FP16)
-$$\text{Per Token} = 2 \times 32 \times 8 \times 128 \times 2 = 131,072 \text{ bytes} \approx 128 \text{ KB / token}$$
+**Calculation**:
+$$2 \times 32 \times 8 \times 128 \times 2 = 131,072 \text{ bytes per token} \approx 128 \text{ KB / token}$$
 
-#### Budget Table:
-| Context Window | KV Cache per Agent | 2 Concurrent Agents | VRAM Headroom on GTX 1080 Ti (11GB)* |
-| :--- | :--- | :--- | :--- |
-| **2,048 tokens** | ~256 MB | ~512 MB | ~5.5 GB free (Very Safe) |
-| **4,096 tokens** | ~512 MB | ~1.0 GB | ~5.0 GB free (Recommended) |
-| **8,192 tokens** | ~1.0 GB | ~2.0 GB | ~4.0 GB free (Upper Limit) |
-| **16,384 tokens** | ~2.0 GB | ~4.0 GB | ~2.0 GB free (Risk of OOM) |
+* At **2,048 tokens** context: $2048 \times 128\text{ KB} = 256\text{ MB}$
+* At **4,096 tokens** context: $4096 \times 128\text{ KB} = 512\text{ MB}$
+* At **8,192 tokens** context: $8192 \times 128\text{ KB} = 1024\text{ MB} = 1\text{ GB}$
 
-*\*Assuming 8B model weights take ~5.0 GB in Q4_K_M.*
+#### VRAM Allocation on 1080 Ti:
+```
+Total VRAM:                                11,264 MB (11 GB)
+- Qwen3 8B Model Weights (Q4_K_M):         -5,200 MB
+- CUDA Context & Framework Buffers:          -800 MB
+────────────────────────────────────────────────────
+Available for KV Cache:                     5,264 MB (~5.2 GB)
+```
+
+**Conclusion for your design**:
+On the GTX 1080 Ti, you can safely support:
+* **Two concurrent agents** at **8,192 tokens** context ($2 \times 1\text{ GB} = 2\text{ GB}$), or
+* **Four concurrent agents** at **4,096 tokens** context ($4 \times 0.5\text{ GB} = 2\text{ GB}$).
+Leaving ~3.2 GB of safety headroom so memory never spills over PCIe into slow system RAM!
 
 ---
 
-### Milestone 2.2: Building the Slot-Based KV Cache Manager
+## Task 2.2: Implement the Slot-Based KV Cache Manager
 
-#### Objective
-Implement a real memory allocator in Go that manages context slots, tracks token usage, and evicts least-recently-used (LRU) sessions when VRAM capacity is reached.
+### The Goal
+Now let's build the allocator in Go. It will manage a fixed number of slots (e.g. 2 or 4 slots), track which agent session is using which slot, and reject or evict sessions when memory is full.
 
-#### File Map
-* **Interface**: `internal/llm/kv_placeholder.go`
-* **New File to Add**: `internal/llm/kv_allocator.go`
-* **Test File to Add**: `internal/llm/kv_test.go`
+---
 
-#### Implementation Steps
-1. Create a `KVSlot` struct representing a VRAM context buffer.
-2. Create a `SlotManager` struct holding `maxSlots`, `maxTokensPerSlot`, and an active slot map.
-3. Implement `AllocateSlot(ctx, sessionID, tokens)`:
-   * If `sessionID` already has a slot, update its `lastUsed` timestamp and return.
-   * If an empty slot exists, reserve it.
-   * If all slots are full, invoke `EvictLRU()`.
-4. Implement `EvictLRU()`: finds the slot with the oldest `lastUsed` time and frees it.
+### Step 2.2.1: Create the Source File
+* **Folder**: `internal/llm/`
+* **File to Create**: `internal/llm/kv_allocator.go`
 
-#### Code Blueprint (`internal/llm/kv_allocator.go`)
+```bash
+touch internal/llm/kv_allocator.go
+```
+
+---
+
+### Step 2.2.2: Paste the Implementation
+Open [internal/llm/kv_allocator.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/llm/kv_allocator.go) and paste:
+
 ```go
 package llm
 
@@ -366,6 +504,7 @@ import (
 	"time"
 )
 
+// KVSlot represents a reserved chunk of VRAM context.
 type KVSlot struct {
 	ID        int
 	SessionID string
@@ -374,32 +513,33 @@ type KVSlot struct {
 	Active    bool
 }
 
+// SlotManager manages a fixed pool of KV context slots.
 type SlotManager struct {
-	mu               sync.Mutex
-	slots            []*KVSlot
-	maxSlots         int
-	maxTokensPerSlot int
-	bytesPerToken    int64
+	mu            sync.Mutex
+	slots         []*KVSlot
+	maxSlots      int
+	bytesPerToken int64
 }
 
-func NewSlotManager(maxSlots, maxTokensPerSlot int, bytesPerToken int64) *SlotManager {
+// NewSlotManager creates an allocator with a fixed slot capacity.
+func NewSlotManager(maxSlots int, bytesPerToken int64) *SlotManager {
 	slots := make([]*KVSlot, maxSlots)
 	for i := 0; i < maxSlots; i++ {
 		slots[i] = &KVSlot{ID: i, Active: false}
 	}
 	return &SlotManager{
-		slots:            slots,
-		maxSlots:         maxSlots,
-		maxTokensPerSlot: maxTokensPerSlot,
-		bytesPerToken:    bytesPerToken,
+		slots:         slots,
+		maxSlots:      maxSlots,
+		bytesPerToken: bytesPerToken,
 	}
 }
 
+// AllocateSlot assigns a slot to a sessionID, or evicts the oldest session if full.
 func (m *SlotManager) AllocateSlot(ctx context.Context, sessionID string, expectedTokens int) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// 1. Check if session already owns a slot
+	// Case 1: Session already owns a slot. Update timestamp and token count.
 	for _, slot := range m.slots {
 		if slot.Active && slot.SessionID == sessionID {
 			slot.LastUsed = time.Now()
@@ -408,7 +548,7 @@ func (m *SlotManager) AllocateSlot(ctx context.Context, sessionID string, expect
 		}
 	}
 
-	// 2. Find an empty slot
+	// Case 2: An empty slot is available.
 	for _, slot := range m.slots {
 		if !slot.Active {
 			slot.Active = true
@@ -419,7 +559,7 @@ func (m *SlotManager) AllocateSlot(ctx context.Context, sessionID string, expect
 		}
 	}
 
-	// 3. No empty slots — evict oldest (LRU)
+	// Case 3: All slots full! Find the oldest slot (LRU) and evict it.
 	oldestIdx := -1
 	var oldestTime time.Time
 
@@ -438,9 +578,10 @@ func (m *SlotManager) AllocateSlot(ctx context.Context, sessionID string, expect
 		return slot.ID, nil
 	}
 
-	return 0, fmt.Errorf("failed to allocate KV slot")
+	return 0, fmt.Errorf("no slots available")
 }
 
+// FreeSlot releases a slot when an agent completes its conversation.
 func (m *SlotManager) FreeSlot(ctx context.Context, slotID int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -455,93 +596,112 @@ func (m *SlotManager) FreeSlot(ctx context.Context, slotID int) error {
 	return nil
 }
 
+// Stats returns the active memory usage.
 func (m *SlotManager) Stats() (*KVMetrics, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	active := 0
-	var totalMemory int64
+	var usedBytes int64
 
-	for _, s := range m.slots {
-		if s.Active {
+	for _, slot := range m.slots {
+		if slot.Active {
 			active++
-			totalMemory += int64(s.Tokens) * m.bytesPerToken
+			usedBytes += int64(slot.Tokens) * m.bytesPerToken
 		}
 	}
 
 	return &KVMetrics{
 		ActiveSlots:     active,
 		TotalSlots:      m.maxSlots,
-		UsedMemoryBytes: totalMemory,
+		UsedMemoryBytes: usedBytes,
 	}, nil
 }
 ```
 
-#### Verification Test (`internal/llm/kv_test.go`)
+---
+
+### Step 2.2.3: Write the Unit Test
+* **File to Create**: `internal/llm/kv_test.go`
+```bash
+touch internal/llm/kv_test.go
+```
+
+Open [internal/llm/kv_test.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/llm/kv_test.go) and add:
+
 ```go
 package llm
 
 import (
 	"context"
 	"testing"
+	"time"
 )
 
-func TestSlotManagerAllocationAndEviction(t *testing.T) {
-	// Create manager with 2 slots max (simulating GTX 1080 Ti limits)
-	mgr := NewSlotManager(2, 4096, 131072) // 128 KB per token
-
+func TestKVSlotAllocationAndEviction(t *testing.T) {
+	// Simulate 2 slots max (128 KB per token for Qwen 8B)
+	allocator := NewSlotManager(2, 131072)
 	ctx := context.Background()
 
-	// Allocate Slot 0
-	s0, err := mgr.AllocateSlot(ctx, "session-A", 1000)
-	if err != nil || s0 != 0 {
-		t.Fatalf("expected slot 0, got %d, err: %v", s0, err)
+	// 1. Allocate session 1
+	slot0, err := allocator.AllocateSlot(ctx, "session-agent-research", 2048)
+	if err != nil || slot0 != 0 {
+		t.Fatalf("Expected slot 0, got %d, err: %v", slot0, err)
 	}
 
-	// Allocate Slot 1
-	s1, err := mgr.AllocateSlot(ctx, "session-B", 2000)
-	if err != nil || s1 != 1 {
-		t.Fatalf("expected slot 1, got %d, err: %v", s1, err)
+	time.Sleep(10 * time.Millisecond)
+
+	// 2. Allocate session 2
+	slot1, err := allocator.AllocateSlot(ctx, "session-agent-email", 2048)
+	if err != nil || slot1 != 1 {
+		t.Fatalf("Expected slot 1, got %d, err: %v", slot1, err)
 	}
 
-	// Allocate Slot 2 (Capacity full! Should evict session-A)
-	s2, err := mgr.AllocateSlot(ctx, "session-C", 1500)
-	if err != nil {
-		t.Fatalf("allocation with LRU eviction failed: %v", err)
-	}
-	t.Logf("Session-C assigned slot: %d (evicted oldest)", s2)
-
-	stats, _ := mgr.Stats()
+	// Verify stats: 2 active slots
+	stats, _ := allocator.Stats()
 	if stats.ActiveSlots != 2 {
-		t.Errorf("expected 2 active slots, got %d", stats.ActiveSlots)
+		t.Errorf("Expected 2 active slots, got %d", stats.ActiveSlots)
 	}
-}
-```
+	t.Logf("Memory used: %d MB", stats.UsedMemoryBytes/(1024*1024))
 
-#### How to Run
-```bash
-go test -v -run TestSlotManager ./internal/llm
+	time.Sleep(10 * time.Millisecond)
+
+	// 3. Allocate session 3 (All slots full! Should evict session 1)
+	slotEvicted, err := allocator.AllocateSlot(ctx, "session-agent-sales", 2048)
+	if err != nil {
+		t.Fatalf("Allocation failed: %v", err)
+	}
+	if slotEvicted != 0 {
+		t.Errorf("Expected LRU to evict slot 0, but got slot %d", slotEvicted)
+	}
+	t.Logf("Successfully evicted oldest session and reused Slot %d", slotEvicted)
+}
 ```
 
 ---
 
-### Milestone 2.3: Implementing Prefix Caching for Shared Agent Prompts
-
-#### Objective
-Fleet agents share identical base tool schemas (~1,200 tokens). Prefix caching hashes the system prompt tokens and points multiple slots to the same physical memory block until an agent appends custom messages.
-
-#### Guiding Architectural Concept
-```go
-// Concept:
-// prefixHash = sha256(systemPrompt + toolDefinitions)
-// If cache[prefixHash] exists in GPU memory:
-//   Don't re-compute prompt attention!
-//   Directly copy KV pointer into slot starting at offset N.
+### Step 2.2.4: Run the Test
+```bash
+go test -v -run TestKVSlotAllocationAndEviction ./internal/llm
 ```
+
+#### Expected Terminal Output:
+```
+=== RUN   TestKVSlotAllocationAndEviction
+    kv_test.go:31: Memory used: 512 MB
+    kv_test.go:42: Successfully evicted oldest session and reused Slot 0
+--- PASS: TestKVSlotAllocationAndEviction (0.02s)
+PASS
+ok  	github.com/chengyaolee/blooper/internal/llm	0.412s
+```
+
+You now have a working, thread-safe KV cache slot manager!
 
 ---
 
 # Track 3: Model Context Protocol (MCP) Client
+
+The **Model Context Protocol (MCP)** is an open standard designed to let AI agents interact with external tools and databases through a standardized protocol. Instead of hardcoding specialized Go tools for Google Calendar, Slack, GitHub, Postgres, and Email, an external program runs as an **MCP Server**, and Blooper connects to it as an **MCP Client**.
 
 ```
                        MCP ARCHITECTURE IN BLOOPER
@@ -549,13 +709,13 @@ Fleet agents share identical base tool schemas (~1,200 tokens). Prefix caching h
    ┌─────────────────────────────────────────────────────────────┐
    │                       Blooper Core                          │
    │                                                             │
-   │  llm.InferenceEngine ──► Model outputs:                     │
-   │                          call_tool("read_emails", {...})    │
+   │  llm.InferenceEngine ──► Model outputs tool call:           │
+   │                          read_emails({"unread_only": true}) │
    └─────────────────────────────────────────────────────────────┘
                                   │
                                   ▼
    ┌─────────────────────────────────────────────────────────────┐
-   │           internal/tools/mcp_adapter.go                     │
+   │            internal/tools/mcp_adapter.go                    │
    │                                                             │
    │  Translates Blooper Tool.Execute() into JSON-RPC 2.0:       │
    │  {"jsonrpc":"2.0","method":"tools/call","params":{...}}    │
@@ -570,18 +730,35 @@ Fleet agents share identical base tool schemas (~1,200 tokens). Prefix caching h
    └─────────────────────────────────────────────────────────────┘
 ```
 
+Communication is standard **JSON-RPC 2.0** over `stdin`/`stdout`:
+1. `initialize`: Handshake where client and server exchange capabilities and protocol versions.
+2. `notifications/initialized`: Notification sent by the client acknowledging handshake completion.
+3. `tools/list`: Server returns the list of available tools with their JSON Schema parameters.
+4. `tools/call`: Client invokes a tool by name with arguments; server returns content blocks.
+
 ---
 
-### Milestone 3.1: Building the Stdio JSON-RPC 2.0 Transport
+## Task 3.1: Build the Subprocess JSON-RPC Transport
 
-#### Objective
-Launch an MCP server process, establish communication over `stdin` and `stdout`, and complete the JSON-RPC `initialize` handshake.
+### The Goal
+Build `MCPClient` in `internal/tools/mcp_client.go`. It will launch any external MCP server executable as a child process (`exec.Command`), write newline-delimited JSON-RPC requests to its `stdin`, read newline-delimited responses from its `stdout`, and match each response back to the caller using a correlation `id`.
 
-#### File Map
-* **New File to Add**: `internal/tools/mcp_client.go`
-* **Test File to Add**: `internal/tools/mcp_test.go`
+---
 
-#### Code Blueprint (`internal/tools/mcp_client.go`)
+### Step 3.1.1: Create the Source File
+* **Folder**: `internal/tools/`
+* **File to Create**: [internal/tools/mcp_client.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_client.go)
+
+In terminal:
+```bash
+touch internal/tools/mcp_client.go
+```
+
+---
+
+### Step 3.1.2: Write the `MCPClient` Implementation
+Open [internal/tools/mcp_client.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_client.go) and paste:
+
 ```go
 package tools
 
@@ -596,13 +773,15 @@ import (
 	"sync/atomic"
 )
 
+// JSONRPCRequest represents a JSON-RPC 2.0 request payload.
 type JSONRPCRequest struct {
 	JSONRPC string      `json:"jsonrpc"`
-	ID      int64       `json:"id"`
+	ID      int64       `json:"id,omitempty"` // Omitted for notifications
 	Method  string      `json:"method"`
 	Params  interface{} `json:"params,omitempty"`
 }
 
+// JSONRPCResponse represents a JSON-RPC 2.0 response payload.
 type JSONRPCResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      int64           `json:"id"`
@@ -610,34 +789,38 @@ type JSONRPCResponse struct {
 	Error   *JSONRPCError   `json:"error,omitempty"`
 }
 
+// JSONRPCError holds error code and message.
 type JSONRPCError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
+// MCPClient manages a subprocess MCP server communicating over stdio.
 type MCPClient struct {
-	cmd       *exec.Cmd
-	stdin     io.WriteCloser
-	reader    *bufio.Reader
-	mu        sync.Mutex
-	seq       int64
-	pending   map[int64]chan *JSONRPCResponse
+	cmd     *exec.Cmd
+	stdin   io.WriteCloser
+	reader  *bufio.Reader
+	mu      sync.Mutex
+	seq     int64
+	pending map[int64]chan *JSONRPCResponse
 }
 
+// NewMCPClient spawns an MCP server subprocess and starts the background response reader.
 func NewMCPClient(command string, args ...string) (*MCPClient, error) {
 	cmd := exec.Command(command, args...)
+
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stdin pipe: %w", err)
+		return nil, fmt.Errorf("failed to open stdin pipe: %w", err)
 	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
+		return nil, fmt.Errorf("failed to open stdout pipe: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start mcp process: %w", err)
+		return nil, fmt.Errorf("failed to start mcp subprocess: %w", err)
 	}
 
 	client := &MCPClient{
@@ -647,12 +830,12 @@ func NewMCPClient(command string, args ...string) (*MCPClient, error) {
 		pending: make(map[int64]chan *JSONRPCResponse),
 	}
 
-	// Start background reader loop
 	go client.readLoop()
 
 	return client, nil
 }
 
+// readLoop runs in the background, continuously parsing newline-delimited JSON-RPC responses.
 func (c *MCPClient) readLoop() {
 	for {
 		line, err := c.reader.ReadBytes('\n')
@@ -662,12 +845,12 @@ func (c *MCPClient) readLoop() {
 
 		var resp JSONRPCResponse
 		if err := json.Unmarshal(line, &resp); err != nil {
-			continue
+			continue // Skip non-JSON or debug logs
 		}
 
 		c.mu.Lock()
-		ch, found := c.pending[resp.ID]
-		if found {
+		ch, exists := c.pending[resp.ID]
+		if exists {
 			delete(c.pending, resp.ID)
 			ch <- &resp
 		}
@@ -675,6 +858,7 @@ func (c *MCPClient) readLoop() {
 	}
 }
 
+// Call sends a JSON-RPC request and blocks until a matching response arrives or context times out.
 func (c *MCPClient) Call(ctx context.Context, method string, params interface{}) (*JSONRPCResponse, error) {
 	id := atomic.AddInt64(&c.seq, 1)
 
@@ -687,11 +871,12 @@ func (c *MCPClient) Call(ctx context.Context, method string, params interface{})
 
 	data, err := json.Marshal(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 	data = append(data, '\n')
 
 	respChan := make(chan *JSONRPCResponse, 1)
+
 	c.mu.Lock()
 	c.pending[id] = respChan
 	c.mu.Unlock()
@@ -700,11 +885,14 @@ func (c *MCPClient) Call(ctx context.Context, method string, params interface{})
 	_, err = c.stdin.Write(data)
 	c.mu.Unlock()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to write to stdin: %w", err)
 	}
 
 	select {
 	case <-ctx.Done():
+		c.mu.Lock()
+		delete(c.pending, id)
+		c.mu.Unlock()
 		return nil, ctx.Err()
 	case resp := <-respChan:
 		if resp.Error != nil {
@@ -714,37 +902,91 @@ func (c *MCPClient) Call(ctx context.Context, method string, params interface{})
 	}
 }
 
+// Notify sends a one-way notification without expecting a response ID.
+func (c *MCPClient) Notify(ctx context.Context, method string, params interface{}) error {
+	req := JSONRPCRequest{
+		JSONRPC: "2.0",
+		Method:  method,
+		Params:  params,
+	}
+
+	data, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+	data = append(data, '\n')
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	_, err = c.stdin.Write(data)
+	return err
+}
+
+// Initialize performs the mandatory MCP initialization handshake.
+func (c *MCPClient) Initialize(ctx context.Context) error {
+	initParams := map[string]interface{}{
+		"protocolVersion": "2024-11-05",
+		"capabilities":    map[string]interface{}{},
+		"clientInfo": map[string]string{
+			"name":    "blooper",
+			"version": "1.0.0",
+		},
+	}
+
+	_, err := c.Call(ctx, "initialize", initParams)
+	if err != nil {
+		return fmt.Errorf("initialize handshake failed: %w", err)
+	}
+
+	// Send mandatory initialized notification
+	return c.Notify(ctx, "notifications/initialized", map[string]interface{}{})
+}
+
+// Close gracefully terminates the subprocess.
 func (c *MCPClient) Close() error {
 	_ = c.stdin.Close()
-	return c.cmd.Process.Kill()
+	if c.cmd != nil && c.cmd.Process != nil {
+		return c.cmd.Process.Kill()
+	}
+	return nil
 }
 ```
 
 ---
 
-### Milestone 3.2: Wrapping MCP Tools into Blooper's Tool Registry
+## Task 3.2: Implement the Tool Adapter for Blooper
 
-#### Objective
-Expose tools discovered from an MCP server as standard Blooper `tools.Tool` instances so any agent can use them natively.
+### The Goal
+Blooper's agents execute tools that conform to the `tools.Tool` interface in [internal/tools/tool.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/tool.go). We will build an adapter in `internal/tools/mcp_adapter.go` that translates an MCP tool definition into this interface so any Blooper agent can call it like a native tool.
 
-#### File Map
-* **New File to Add**: `internal/tools/mcp_adapter.go`
+---
 
-#### Implementation Steps
-1. Call `tools/list` on the MCP client to retrieve all tool definitions.
-2. For each discovered tool, instantiate an `MCPToolAdapter`.
-3. Register the adapters in Blooper's `ToolRegistry`.
+### Step 3.2.1: Create the Adapter File
+* **Folder**: `internal/tools/`
+* **File to Create**: [internal/tools/mcp_adapter.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_adapter.go)
 
-#### Code Blueprint (`internal/tools/mcp_adapter.go`)
+```bash
+touch internal/tools/mcp_adapter.go
+```
+
+---
+
+### Step 3.2.2: Write the `MCPToolAdapter` Implementation
+Open [internal/tools/mcp_adapter.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_adapter.go) and paste:
+
 ```go
 package tools
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
+
 	"github.com/chengyaolee/blooper/internal/llm"
 )
 
+// MCPToolAdapter wraps an MCP server tool into Blooper's standard Tool interface.
 type MCPToolAdapter struct {
 	client   *MCPClient
 	name     string
@@ -753,12 +995,17 @@ type MCPToolAdapter struct {
 	approval bool
 }
 
-func NewMCPToolAdapter(client *MCPClient, name, desc string, schema llm.FunctionDef, approval bool) *MCPToolAdapter {
+// NewMCPToolAdapter creates an adapter for an MCP tool.
+func NewMCPToolAdapter(client *MCPClient, name, desc string, parameters map[string]interface{}, approval bool) *MCPToolAdapter {
 	return &MCPToolAdapter{
-		client:   client,
-		name:     name,
-		desc:     desc,
-		schema:   schema,
+		client: client,
+		name:   name,
+		desc:   desc,
+		schema: llm.FunctionDef{
+			Name:        name,
+			Description: desc,
+			Parameters:  parameters,
+		},
 		approval: approval,
 	}
 }
@@ -768,18 +1015,194 @@ func (a *MCPToolAdapter) Description() string      { return a.desc }
 func (a *MCPToolAdapter) Schema() llm.FunctionDef  { return a.schema }
 func (a *MCPToolAdapter) RequiresApproval() bool   { return a.approval }
 
+// Execute delegates the execution to the MCP server via "tools/call".
 func (a *MCPToolAdapter) Execute(ctx context.Context, args json.RawMessage) (*ToolResult, error) {
-	params := map[string]interface{}{
+	var parsedArgs map[string]interface{}
+	if err := json.Unmarshal(args, &parsedArgs); err != nil {
+		return &ToolResult{Error: fmt.Sprintf("invalid tool arguments: %v", err)}, nil
+	}
+
+	callParams := map[string]interface{}{
 		"name":      a.name,
-		"arguments": args,
+		"arguments": parsedArgs,
 	}
 
-	resp, err := a.client.Call(ctx, "tools/call", params)
+	resp, err := a.client.Call(ctx, "tools/call", callParams)
 	if err != nil {
-		return &ToolResult{Error: err.Error()}, nil
+		return &ToolResult{Error: fmt.Sprintf("mcp execution failed: %v", err)}, nil
 	}
 
-	return &ToolResult{Output: string(resp.Result)}, nil
+	// MCP responses format: {"content": [{"type": "text", "text": "..."}]}
+	var callResult struct {
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+		IsError bool `json:"isError"`
+	}
+
+	if err := json.Unmarshal(resp.Result, &callResult); err != nil {
+		return &ToolResult{Output: string(resp.Result)}, nil
+	}
+
+	var sb strings.Builder
+	for _, c := range callResult.Content {
+		if c.Type == "text" {
+			sb.WriteString(c.Text)
+			sb.WriteString("\n")
+		}
+	}
+
+	output := strings.TrimSpace(sb.String())
+	if callResult.IsError {
+		return &ToolResult{Error: output}, nil
+	}
+
+	return &ToolResult{Output: output}, nil
+}
+```
+
+---
+
+## Task 3.3: Write an End-to-End Test with a Mock MCP Server
+
+### The Goal
+Verify that `MCPClient` can start a process, execute the `initialize` handshake, and invoke a tool via `tools/call` without needing external npm/Python packages.
+
+---
+
+### Step 3.3.1: Create `internal/tools/mcp_test.go`
+```bash
+touch internal/tools/mcp_test.go
+```
+
+Open [internal/tools/mcp_test.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_test.go) and paste:
+
+```go
+package tools
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"testing"
+	"time"
+)
+
+// TestHelperProcess acts as a mock MCP server responding on stdin/stdout.
+func TestHelperProcess(t *testing.T) {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+		return
+	}
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		var req JSONRPCRequest
+		if err := json.Unmarshal(line, &req); err != nil {
+			continue
+		}
+
+		switch req.Method {
+		case "initialize":
+			resp := fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"result":{"protocolVersion":"2024-11-05","serverInfo":{"name":"mock-server","version":"1.0"}}}`+"\n", req.ID)
+			os.Stdout.WriteString(resp)
+		case "tools/call":
+			resp := fmt.Sprintf(`{"jsonrpc":"2.0","id":%d,"result":{"content":[{"type":"text","text":"Mock tool output from MCP"}],"isError":false}}`+"\n", req.ID)
+			os.Stdout.WriteString(resp)
+		}
+	}
+	os.Exit(0)
+}
+
+func TestMCPClientHandshakeAndToolCall(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Launch the test binary itself with GO_WANT_HELPER_PROCESS=1 to run the mock server
+	client, err := NewMCPClient(os.Args[0], "-test.run=TestHelperProcess")
+	if err != nil {
+		t.Fatalf("failed to spawn mock server: %v", err)
+	}
+	client.cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
+	defer client.Close()
+
+	// 1. Handshake
+	if err := client.Initialize(ctx); err != nil {
+		t.Fatalf("Handshake failed: %v", err)
+	}
+	t.Log("✅ MCP Handshake completed successfully!")
+
+	// 2. Wrap into Blooper Tool Adapter
+	adapter := NewMCPToolAdapter(client, "mock_echo", "A mock tool", map[string]interface{}{}, false)
+
+	// 3. Execute through Blooper's standard interface
+	res, err := adapter.Execute(ctx, json.RawMessage(`{"input":"hello"}`))
+	if err != nil {
+		t.Fatalf("Tool execution failed: %v", err)
+	}
+	if res.Error != "" {
+		t.Fatalf("Tool returned error: %s", res.Error)
+	}
+
+	if res.Output != "Mock tool output from MCP" {
+		t.Errorf("Unexpected tool output: %q", res.Output)
+	}
+	t.Logf("✅ Tool Call succeeded! Output: %s", res.Output)
+}
+```
+
+---
+
+### Step 3.3.2: Run the Test
+```bash
+go test -v -run TestMCPClientHandshakeAndToolCall ./internal/tools
+```
+
+#### Expected Terminal Output:
+```
+=== RUN   TestMCPClientHandshakeAndToolCall
+    mcp_test.go:48: ✅ MCP Handshake completed successfully!
+    mcp_test.go:66: ✅ Tool Call succeeded! Output: Mock tool output from MCP
+--- PASS: TestMCPClientHandshakeAndToolCall (0.05s)
+PASS
+ok  	github.com/chengyaolee/blooper/internal/tools	0.210s
+```
+
+---
+
+## Task 3.4: Connect External Community MCP Servers
+
+### The Goal
+Now that your transport and adapter work, you can connect any community MCP server (like SQLite, GitHub, or Filesystem) to your fleet!
+
+### Example: Adding an MCP Server to `config/blooper.yaml`
+Declare external servers in your configuration file:
+
+```yaml
+mcp_servers:
+  - name: "sqlite_memory"
+    command: "npx"
+    args: ["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "data/blooper.db"]
+    tools:
+      - read_query
+      - write_query
+```
+
+At startup in `cmd/blooper/main.go`, Blooper launches each configured server:
+```go
+for _, srv := range cfg.MCPServers {
+    client, err := tools.NewMCPClient(srv.Command, srv.Args...)
+    if err == nil {
+        _ = client.Initialize(ctx)
+        // Automatically registers tools for your agents!
+        for _, t := range srv.Tools {
+            adapter := tools.NewMCPToolAdapter(client, t, "MCP Tool", nil, false)
+            toolRegistry.Register(adapter)
+        }
+    }
 }
 ```
 
@@ -787,43 +1210,32 @@ func (a *MCPToolAdapter) Execute(ctx context.Context, args json.RawMessage) (*To
 
 # Track 4: Hybrid Search Memory (BM25 + Local Vector Embeddings)
 
-```
-                       HYBRID MEMORY ARCHITECTURE
-                       
-   User Query: "How should we structure outreach to engineering leaders?"
-                       │
-          ┌────────────┴────────────┐
-          ▼                         ▼
-   FTS5 BM25 Search          Ollama nomic-embed-text
-   Exact keywords:           Vector Cosine Similarity:
-   "outreach", "leaders"     Finds "CTO messaging strategy"
-   Rank 1: Doc 12            Rank 1: Doc 45
-   Rank 2: Doc 45            Rank 2: Doc 12
-          │                         │
-          └────────────┬────────────┘
-                       ▼
-         Reciprocal Rank Fusion (RRF)
-         Merged Rank 1: Doc 45 (HighScore)
-         Merged Rank 2: Doc 12 (HighScore)
-```
+Blooper currently uses SQLite FTS5 (BM25 keyword search) for memory. Here, you will add **dense vector semantic search** using `nomic-embed-text` locally via Ollama, and merge keyword and vector results using **Reciprocal Rank Fusion (RRF)**.
 
 ---
 
-### Milestone 4.1: Generating Local Embeddings with Ollama
+## Task 4.1: Generate Local Embeddings with Ollama
 
-#### Objective
-Generate 768-dimensional dense vector embeddings using `nomic-embed-text` hosted locally on your Ollama server (~270MB VRAM footprint).
+### The Goal
+Call Ollama's local `/api/embeddings` endpoint to transform any conversation text into a 768-dimensional array of `float32` numbers.
 
-#### Setup
-In your terminal, pull the embedding model:
+---
+
+### Step 4.1.1: Pull the Embedding Model
+In your terminal, pull the model (takes ~270MB):
 ```bash
 ollama pull nomic-embed-text
 ```
 
-#### File Map
-* **New File to Add**: `internal/memory/embed.go`
+---
 
-#### Code Blueprint (`internal/memory/embed.go`)
+### Step 4.1.2: Create `internal/memory/embed.go`
+```bash
+touch internal/memory/embed.go
+```
+
+Open [internal/memory/embed.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/memory/embed.go) and add:
+
 ```go
 package memory
 
@@ -866,10 +1278,13 @@ type embedResponse struct {
 }
 
 func (e *Embedder) Embed(ctx context.Context, text string) ([]float32, error) {
-	reqBody, _ := json.Marshal(embedRequest{
+	reqBody, err := json.Marshal(embedRequest{
 		Model:  e.model,
 		Prompt: text,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, e.baseURL+"/api/embeddings", bytes.NewReader(reqBody))
 	if err != nil {
@@ -884,12 +1299,12 @@ func (e *Embedder) Embed(ctx context.Context, text string) ([]float32, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ollama embed error code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("ollama returned HTTP %d", resp.StatusCode)
 	}
 
 	var res embedResponse
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return res.Embedding, nil
@@ -898,19 +1313,22 @@ func (e *Embedder) Embed(ctx context.Context, text string) ([]float32, error) {
 
 ---
 
-### Milestone 4.2: Vector Similarity & Reciprocal Rank Fusion (RRF)
+## Task 4.2: Implement Pure-Go Cosine Similarity & RRF
 
-#### Objective
-Compute cosine similarity between queries and stored memories, then blend vector ranks with FTS5 BM25 ranks using the Reciprocal Rank Fusion (RRF) algorithm.
+### The Goal
+Compare two vectors mathematically without any external vector database.
 
-#### Mathematical Formulation
-$$\text{RRF Score}(d) = \frac{1}{60 + \text{rank}_{\text{BM25}}(d)} + \frac{1}{60 + \text{rank}_{\text{Vector}}(d)}$$
+$$\text{Cosine Similarity}(A, B) = \frac{A \cdot B}{\|A\| \|B\|}$$
 
-#### File Map
-* **New File to Add**: `internal/memory/hybrid.go`
-* **Test File to Add**: `internal/memory/hybrid_test.go`
+---
 
-#### Code Blueprint (`internal/memory/hybrid.go`)
+### Step 4.2.1: Create `internal/memory/hybrid.go`
+```bash
+touch internal/memory/hybrid.go
+```
+
+Open [internal/memory/hybrid.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/memory/hybrid.go) and add:
+
 ```go
 package memory
 
@@ -919,7 +1337,7 @@ import (
 	"sort"
 )
 
-// CosineSimilarity calculates the cosine angle between two normalized vectors.
+// CosineSimilarity computes the angle between two embedding vectors (-1.0 to 1.0).
 func CosineSimilarity(a, b []float32) float32 {
 	if len(a) != len(b) || len(a) == 0 {
 		return 0
@@ -939,32 +1357,34 @@ func CosineSimilarity(a, b []float32) float32 {
 	return float32(dot / (math.Sqrt(normA) * math.Sqrt(normB)))
 }
 
-type RankedItem struct {
+type RankedResult struct {
 	ID    int64
 	Score float64
 }
 
-// ReciprocalRankFusion merges two ranked lists of IDs into a unified scored ranking.
-func ReciprocalRankFusion(bm25RankedIDs, vectorRankedIDs []int64, k float64) []RankedItem {
+// ReciprocalRankFusion combines ranks from Keyword Search (BM25) and Vector Similarity.
+// Formula: Score(doc) = 1/(60 + rank_bm25) + 1/(60 + rank_vector)
+func ReciprocalRankFusion(bm25IDs, vectorIDs []int64, k float64) []RankedResult {
 	if k <= 0 {
-		k = 60.0 // Standard constant
+		k = 60.0
 	}
 
 	scores := make(map[int64]float64)
 
-	for rank, id := range bm25RankedIDs {
+	for rank, id := range bm25IDs {
 		scores[id] += 1.0 / (k + float64(rank+1))
 	}
 
-	for rank, id := range vectorRankedIDs {
+	for rank, id := range vectorIDs {
 		scores[id] += 1.0 / (k + float64(rank+1))
 	}
 
-	results := make([]RankedItem, 0, len(scores))
+	results := make([]RankedResult, 0, len(scores))
 	for id, score := range scores {
-		results = append(results, RankedItem{ID: id, Score: score})
+		results = append(results, RankedResult{ID: id, Score: score})
 	}
 
+	// Sort descending by combined score
 	sort.Slice(results, func(i, j int) bool {
 		return results[i].Score > results[j].Score
 	})
@@ -975,16 +1395,66 @@ func ReciprocalRankFusion(bm25RankedIDs, vectorRankedIDs []int64, k float64) []R
 
 ---
 
-## Suggested Execution Roadmap
+### Step 4.2.2: Test It!
+Create `internal/memory/hybrid_test.go`:
 
-1. **Start with Milestone 1.1 & 1.2 (Stealth Browser)**:
-   * Create `internal/tools/browser_test.go` and run `go test -v -run TestBrowserDetection ./internal/tools`.
-   * Update `internal/tools/browser.go` with `--headless=new` and watch your test screenshot change.
-2. **Implement Milestone 2.2 (KV Allocator)**:
-   * Add `internal/llm/kv_allocator.go` and test slot allocation/eviction with `internal/llm/kv_test.go`.
-3. **Implement Milestone 4.2 (Hybrid RRF Memory)**:
-   * Add `internal/memory/hybrid.go` and run unit tests for Cosine Similarity and RRF.
-4. **Implement Milestone 3.1 (MCP Client)**:
-   * Wire a subprocess JSON-RPC client to connect to external email/calendar tools.
+```go
+package memory
 
-Whenever you work on a specific milestone and want a hint or code review, feel free to ask!
+import (
+	"testing"
+)
+
+func TestCosineSimilarity(t *testing.T) {
+	vecA := []float32{1.0, 0.0, 0.0}
+	vecB := []float32{1.0, 0.0, 0.0}
+	vecC := []float32{0.0, 1.0, 0.0}
+
+	// Identical vectors = 1.0
+	simAB := CosineSimilarity(vecA, vecB)
+	if simAB < 0.99 {
+		t.Errorf("Expected similarity 1.0, got %f", simAB)
+	}
+
+	// Orthogonal vectors = 0.0
+	simAC := CosineSimilarity(vecA, vecC)
+	if simAC > 0.01 {
+		t.Errorf("Expected similarity 0.0, got %f", simAC)
+	}
+}
+
+func TestRRF(t *testing.T) {
+	// Document 12 and Document 45 appear in both lists
+	bm25 := []int64{12, 45, 99}
+	vector := []int64{45, 12, 101}
+
+	merged := ReciprocalRankFusion(bm25, vector, 60.0)
+
+	// Both 45 and 12 should be at the top because they matched both search methods!
+	if len(merged) < 2 {
+		t.Fatalf("Expected at least 2 merged items")
+	}
+
+	topID := merged[0].ID
+	if topID != 12 && topID != 45 {
+		t.Errorf("Expected Doc 12 or 45 to win RRF, got %d", topID)
+	}
+	t.Logf("RRF Winner: Doc %d (Score: %f)", merged[0].ID, merged[0].Score)
+}
+```
+
+Run the test:
+```bash
+go test -v -run "TestCosineSimilarity|TestRRF" ./internal/memory
+```
+
+---
+
+## What to do next?
+
+Start right now with **[Task 1.1](#task-11-capture-your-baseline-bot-failure-screenshot)**! 
+1. Create `internal/tools/browser_test.go`
+2. Run `go test -v -run TestBrowserDetection ./internal/tools`
+3. Check `data/screenshots/`
+
+If you get any compile error or test failure, paste the terminal output here and we will debug it together.
