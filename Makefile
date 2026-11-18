@@ -1,4 +1,4 @@
-.PHONY: build run clean test templ setup serve runner desktop desktop-dist
+.PHONY: build run clean test templ setup setup-desktop serve runner desktop desktop-dist
 
 BINARY_NAME=blooper
 BUILD_DIR=./cmd/blooper
@@ -9,9 +9,13 @@ build:
 run: build
 	./$(BINARY_NAME)
 
-# First-time setup: builds, writes config, optionally sets up a runner.
+# Advanced CLI setup: writes server/runner config and optionally .env.
 setup:
 	./scripts/setup.sh
+
+# Recommended macOS source setup while installers are unpublished.
+setup-desktop:
+	./scripts/setup-desktop.sh
 
 # Start the server with the config setup.sh wrote. Loads .env for API keys.
 serve: build

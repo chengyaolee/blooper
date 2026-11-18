@@ -1,87 +1,147 @@
 # blooper
 
-Run an agent fleet on your computer and control it from your iPhone. blooper starts with
-**devices on the same Wi-Fi**, with provider keys stored locally on the computer doing the work.
-The desktop app bundles the coordinator, runner, chat, provider settings, and device pairing.
-OpenAI works throughout the fleet without Ollama; local models are optional.
+Send a spoken or typed instruction from your iPhone and let your computer carry it out.
+blooper combines an agent fleet, a desktop runner, and optional **Mac computer control**:
+see the screen, click, type, use keyboard shortcuts, and scroll. Follow the job from your
+phone, approve consequential steps, or enable **auto-approval for routine steps**.
 
-**Current status:** macOS Apple Silicon and Windows x64 development installers can be built
-from this repository. The iPhone companion is provided as SwiftUI source. Production signing,
-App Store distribution, and publication of automatic-update releases are separate release steps.
-Tailscale, a hosted relay, and cross-network connectivity are deferred.
+**Installers are not published yet.** Run from a clone using the setup script below.
+Computer control targets **macOS 14+** first; the iPhone companion targets **iOS 17+** and
+must be built in Xcode. Both devices must be on the **same Wi-Fi**. Windows supports the
+desktop shell and configured runner actions; native Windows computer control is not built.
 
-## Set up the desktop app
+## Architecture
 
-If you have a built installer, open the macOS DMG and copy blooper to Applications, or run the
-Windows installer. Installed users do not need Go, Node.js, a terminal, or a configuration file.
-Development installers are unsigned and are intended for testing, not public distribution.
+```mermaid
+flowchart TD
+  Phone["iPhone companion<br/>Voice or text · progress · approvals · cancel"]
+  Model["Selected model<br/>OpenAI or local Ollama"]
+  subgraph Desktop["blooper Desktop on your Mac"]
+    Coordinator["Go coordinator<br/>Pairing · signed TLS API · durable jobs"]
+    Journal[("Local job journal<br/>No screenshots")]
+    Planner["Agent planner"]
+    Policy["Approval policy<br/>Manual by default · optional routine auto-approval"]
+    Review["Separate AI screen review<br/>Routine · critical · unknown"]
+    Runner["Local runner<br/>Configured tests/apps + optional computer control"]
+    Helper["Native Swift helper<br/>ScreenCaptureKit · mouse and keyboard"]
+    Coordinator --> Journal
+    Coordinator --> Planner
+    Planner --> Policy
+    Policy <-->|"Assess proposed input"| Review
+    Policy -->|"Approved action"| Runner
+    Runner --> Helper
+    Runner -->|"Screenshot and result"| Planner
+  end
+  Phone <-->|"Same Wi-Fi · TLS · signed requests"| Coordinator
+  Planner <--> Model
+  Review <--> Model
+```
 
-1. Open **blooper → Settings**.
-2. Select **OpenAI**, enter an API key from the [OpenAI platform](https://platform.openai.com/api-keys),
-   and choose **Validate and save**. The default model is `gpt-5.4-mini`.
-3. Optionally add a [Deepgram](https://console.deepgram.com/) key for hosted voice transcription.
-   Without one, the iPhone can use on-device transcription.
-4. Open **Permissions**, select the workspace folders and test commands you want to allow,
-   and optionally select applications. Choose **Save permissions**.
-5. Open **Devices → Create pairing code**. Keep this screen open while pairing your phone.
+The Electron app manages settings, credentials, pairing, and the bundled Go runtime. The
+coordinator records each phone request as a job; the planner proposes typed actions; the
+approval policy decides whether to ask you; and the runner executes on the selected computer.
+The Mac helper captures a fresh screen after input so the planner can check the result. The
+phone shows the latest captured screen and job timeline. Jobs continue if the phone closes,
+provided the computer stays awake and blooper keeps running.
 
-Keys are encrypted using the computer's OS-backed credential store: macOS Keychain or Windows
-DPAPI. Settings supports validation, replacement, and deletion. Saved key values are never
-returned to the desktop renderer or a paired phone. The selected provider receives the API key
-for authentication and the request data needed to do the work; local key storage does not imply
-local inference. Provider validation can use a small amount of API credit.
+Provider keys are encrypted locally with macOS Keychain or Windows DPAPI and passed to the
+runtime in memory. Keys never go to the phone. OpenAI receives prompts, screenshots, and
+results needed for inference; Ollama keeps inference local. Screenshots stay in memory,
+outside the saved job journal, artifacts, and summaries. Action arguments, typed text, and
+results remain in job history. The computer-control loop uses the existing model's vision
+and function tools with native Mac input; it does not use the OpenAI Responses computer-use tool.
 
-To use **Ollama** instead, install and start it on the computer, pull a model such as
-`qwen2.5:3b`, then select **Ollama** and that model in Settings. Conversation recall uses local
-text search and does not require an embedding model.
+The desktop automatically enrolls its local runner. No separate server, runner command,
+Tailscale, account, hosted relay, port forwarding, or APNs key is needed for this setup.
 
-Closing the window keeps blooper running in the menu bar/system tray. Use **Quit blooper** to
-stop it. Enable **Launch blooper when I sign in** for automatic startup in installed builds.
-Update settings can automatically check for and download published releases; the app offers a
-restart to install an update after active jobs finish. Production updates require signed releases.
+## Set up from source on a Mac
 
-## Run the desktop app from a clone
+### 1. Install prerequisites
 
-Requires Git, **Go 1.27.1 or newer** (see `go.mod`), **Node.js 22 or newer**, and macOS or Windows.
-From Terminal or PowerShell:
+- **Git**, **Go 1.27.1+** (see `go.mod`), **Node.js 22+**, and npm.
+- **Xcode Command Line Tools** for the Swift computer helper. If missing, run
+  `xcode-select --install` and finish installation before continuing.
+- **Full Xcode**, including the iOS SDK, and **XcodeGen** to build the iPhone app.
+  Install Xcode from the App Store and open it once to complete setup and accept its license.
+  Command Line Tools alone cannot build the phone app.
+- A signing team/profile supporting the iPhone project's Push Notifications entitlement.
+  See [iPhone signing and APNs details](docs/REMOTE.md#push-notifications).
+
+If you use [Homebrew](https://brew.sh), install the language tools and XcodeGen with:
+
+```sh
+brew install go node xcodegen
+```
+
+Go and Node can also be installed from [go.dev](https://go.dev/dl/) and
+[nodejs.org](https://nodejs.org/). The setup script checks prerequisites and reports missing
+tools; it does not install Homebrew, change your system toolchain selection, or grant permissions.
+
+### 2. Build and launch blooper
 
 ```sh
 git clone https://github.com/chengyaolee/blooper.git
 cd blooper
+./scripts/setup-desktop.sh --ios --launch
+```
+
+The script installs desktop dependencies with `npm ci`, builds the bundled Go runtime and
+Swift helper, runs the helper's check without capturing the screen or sending input, generates
+the iPhone Xcode project, and launches the desktop app. It leaves `.env`, CLI configuration,
+provider settings, and OS permissions untouched. It detects full Xcode at its standard path;
+for a custom Xcode installation, set `DEVELOPER_DIR` when invoking the script.
+
+Omit `--ios` for desktop-only setup, or omit `--launch` to build without opening the app.
+Check prerequisites without installing dependencies, building, or generating files:
+
+```sh
+./scripts/setup-desktop.sh --check --ios
+```
+
+To launch again from the repository root:
+
+```sh
 cd desktop
-npm ci
 npm start
 ```
 
-This builds the Go runtime and starts the desktop interface. Enter API keys in Settings; the
-desktop app does not silently import credentials from `.env`. No separate coordinator or runner
-command is needed.
+Keep the launching terminal open. Closing the app window leaves blooper in the menu bar;
+choose **Quit blooper** before closing its terminal. Launch-at-login and automatic-update
+installation are features of installed builds, not this source setup.
 
-On macOS, `make desktop` from the repository root runs the same setup. On Windows, the npm
-commands above work without installing Make.
+### 3. Connect a model and choose permissions
 
-To build an installer on the target desktop platform:
+1. Open **Settings → Model provider**, select **OpenAI**, enter an API key from the
+   [OpenAI platform](https://platform.openai.com/api-keys), and choose **Validate and save**.
+   The default model is `gpt-5.4-mini`; Ollama is not required.
+2. Optionally connect [Deepgram](https://console.deepgram.com/) for hosted voice transcription.
+   Otherwise the phone can use on-device transcription.
+3. Open **Permissions**. Add any workspace folders and test commands you want to allow, and
+   applications you want to launch by name. Save permissions. These are optional for screen
+   tasks, which have a separate, broad computer-control permission.
+4. Under **Computer control**, choose **Set up Mac permissions…**. In macOS **Privacy &
+   Security**, grant **Accessibility** and **Screen & System Audio Recording** access. In a
+   development launch, macOS may list **blooper-computer** or the development app separately.
+5. Quit and reopen blooper. Enable **Allow my paired phone to control this Mac** and choose
+   **Save permissions**. Computer control is off by default.
+6. Optionally enable **Auto-approve routine steps** and save. See the policy below.
 
-```sh
-cd desktop
-npm ci
-npm run dist
-```
+Credentials can be validated, replaced, or deleted in Settings. Saved key values are not
+returned to the renderer or phone. The desktop does not import `.env`. Validation and hosted
+inference can use provider credit.
 
-Build output goes into `desktop/dist/`: a DMG/ZIP on macOS or an NSIS installer on Windows.
-For an unpacked macOS development bundle without automatically selecting a signing identity:
+For local inference, install and start [Ollama](https://ollama.com/), pull a model, and select
+it in Settings. Screen tasks need a model that supports **both images and tools**. The local
+text-only `qwen2.5:3b` works for ordinary agent tasks but cannot read screenshots. Conversation
+recall uses local text search and needs no embedding model.
 
-```sh
-CSC_IDENTITY_AUTO_DISCOVERY=false npm run pack
-```
+### 4. Build the iPhone companion
 
-See [desktop setup and release instructions](docs/DESKTOP.md#build-and-release) for signing,
-notarization, CI build artifacts, update publication, and the remaining platform tests.
-
-## Build and pair the iPhone app
-
-Building the iPhone app requires a Mac with **full Xcode**, XcodeGen, and an Apple signing team.
-The project targets iOS 17 or newer. Command Line Tools alone do not include the iOS SDK.
+The `--ios` setup option generates `ios/BlooperRemote/BlooperRemote.xcodeproj`. Set your signing
+team and a unique bundle identifier in the existing `settings.base` block of
+[ios/BlooperRemote/project.yml](ios/BlooperRemote/project.yml), using the keys
+`DEVELOPMENT_TEAM` and `PRODUCT_BUNDLE_IDENTIFIER`. In a new terminal at the repository root,
+regenerate and open it:
 
 ```sh
 cd ios/BlooperRemote
@@ -89,26 +149,76 @@ xcodegen generate
 open BlooperRemote.xcodeproj
 ```
 
-1. In Xcode, select your development team and a unique bundle identifier in `project.yml`, then
-   regenerate if you change the project settings. The notification entitlement requires a signing
-   profile that supports Push Notifications; see [APNs setup](docs/REMOTE.md#push-notifications).
-2. Build and run on your iPhone. Allow camera access when scanning and local-network access
-   when connecting.
-3. Keep the phone and computer on the **same Wi-Fi**. Open blooper on the phone, choose
-   **Scan pairing code**, and scan the desktop's QR code.
-4. The QR verifies the computer's TLS certificate. Requests are encrypted and signed; the phone
-   stores the trusted computer identity in its device-only Keychain.
-5. Use **Computers → Pair another computer** to add a Mac or Windows computer. Select which
-   paired computer to control. Each computer keeps its own provider keys, permissions, and jobs.
+Select your connected iPhone in Xcode and build/run the **BlooperRemote** scheme. Allow camera
+access for pairing, local-network access for connecting, and microphone/speech access when
+using voice. Push delivery is optional and requires separate APNs setup; local jobs and their
+in-app event feed work without an APNs service. App Store/TestFlight distribution is not
+provided by the setup script.
 
-A green device icon with **Connected** indicates recent contact. An offline icon with **Offline**
-indicates missing contact. A backgrounded phone can appear offline because its heartbeat stops.
-The desktop must be awake and running blooper to execute work.
+### 5. Pair and send your first instruction
 
-Previously paired devices use Bonjour/mDNS to rediscover their computer. If pairing fails,
-check local-network permission and the desktop firewall's private-network access. Guest Wi-Fi
-and access-point isolation can block device-to-device connections. If discovery is unavailable,
-create and scan a fresh QR code. See [local connectivity details](docs/DESKTOP.md).
+1. Keep the iPhone and Mac on the **same Wi-Fi**, with the Mac awake, unlocked, and running blooper.
+2. On the desktop, open **Devices**, select the Wi-Fi interface if needed, and choose
+   **Create pairing code**. Keep the QR code visible.
+3. On the phone, choose **Scan pairing code** and scan it. The code pins the computer's TLS
+   identity; subsequent requests are encrypted and signed.
+4. Select the Mac and send a request such as **“Open Notes and write a note that says buy milk.”**
+   Review the latest screen and any approval prompts in the job view. Tap **Cancel** to stop.
+   Avoid operating the Mac's mouse and keyboard while a job is running.
+
+Use **Computers → Pair another computer** to add another host. Each host keeps its own keys,
+permissions, and jobs. Bonjour/mDNS helps paired phones rediscover changed local addresses.
+If pairing fails, check local-network permission, the desktop firewall, and Wi-Fi client
+isolation; guest networks may block device-to-device connections. A backgrounded phone can
+appear offline because its heartbeat stops. See [connectivity details](docs/DESKTOP.md).
+
+## Routine auto-approval
+
+Enable **Permissions → Computer control → Auto-approve routine steps** on the Mac, then save.
+It is off by default, applies to that computer, and can only be changed when no jobs are active.
+
+| Step | With routine auto-approval enabled |
+| --- | --- |
+| Screenshots | Continue under the runner's standing grant, as in manual mode |
+| Launch an allowed app; scroll the current view | Continue automatically |
+| Navigate, focus a field, select text, or draft ordinary text | Continue only after a separate AI review identifies the step as routine |
+| Sending/publishing, submitting forms, purchases, deletion/overwrite, account/security changes, or uncertain effects | The review must request phone confirmation |
+| Enter, delete/save shortcuts, or text containing control characters | Always request phone confirmation |
+| Missing, malformed, timed-out, or failed AI review | Request phone confirmation |
+
+The reviewer sees the current screenshot, your request, and the exact proposed action in a
+separate model call with no execution tools. The planner cannot supply its own risk label.
+Reviews add inference latency/cost and can misjudge a step; this is not OS application isolation.
+Auto-approved steps and review reasons are recorded in the timeline. Expired runner grants
+still require approval, and web-search confirmation remains separate.
+
+Rejecting an action prevents it from running. Cancellation stops subsequent actions and asks
+the runner to stop active work; it cannot undo input already delivered. A lost runner with an
+action in flight is marked for reconciliation and is not blindly retried.
+
+## Current limits
+
+Mac computer control covers one **main display**, including Retina coordinate scaling, and
+checks for an unlocked desktop before input. It cannot wake/unlock the computer, control a
+secondary display, or provide direct manual phone gestures. Cross-network access, native
+Windows computer control, published installers, App Store distribution, and production update
+releases remain separate work. Real Mac input, OS permission dialogs, and physical-device
+pairing still need device validation; automated checks cover the software flow.
+
+## Windows source setup and local installer builds
+
+The macOS setup script does not run on Windows. For the desktop shell and configured runner
+actions, install Go and Node.js as above, then run from `desktop/` in PowerShell:
+
+```powershell
+npm ci
+npm start
+```
+
+Developers can create local development installers on the target platform with `npm run dist`
+from `desktop/`. Output goes to `desktop/dist/` (macOS DMG/ZIP or Windows NSIS installer).
+For an unpacked macOS development bundle, run `CSC_IDENTITY_AUTO_DISCOVERY=false npm run pack`.
+These builds are not published production releases. See [build and signing details](docs/DESKTOP.md#build-and-release).
 
 ## Advanced: command-line and self-hosted setup
 
@@ -195,6 +305,7 @@ From the repository root:
 go test -race ./...
 go build ./...
 go vet ./...
+python3 scripts/test-setup-desktop.py
 ```
 
 Desktop credential-storage checks:
@@ -215,6 +326,6 @@ python3 scripts/test-local-trust.py
 
 [Desktop verification instructions](docs/DESKTOP.md#checks) include opt-in live OpenAI and Ollama
 delegation checks. [Hosted provider checks](docs/REMOTE.md#hosted-service-keys-and-checks) cover
-OpenAI and Deepgram. These live checks require keys and can incur provider charges. Full iOS
+OpenAI and Deepgram. These live checks require keys and can incur provider charges. Signed iOS
 builds, physical-device pairing, Windows installation, and production update cycles still need
 platform validation.

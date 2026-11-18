@@ -32,10 +32,30 @@ app.on('browser-window-created',(_event,window) => {
       await window.webContents.executeJavaScript('document.querySelector("[data-page=permissions]").click()');
       await new Promise(r=>setTimeout(r,200));
       assert.equal(await window.webContents.executeJavaScript('document.getElementById("permissions").hidden'),false);
+      const permissions = await window.webContents.executeJavaScript('window.blooper.permissions()');
+      assert.equal(permissions.computer,false);
+      assert.equal(permissions.autoApproveRoutine,false);
+      assert.equal(permissions.computerSupported,process.platform==='darwin');
+      assert.equal(await window.webContents.executeJavaScript('document.getElementById("computer-permissions").hidden'),process.platform!=='darwin');
+      assert.equal(await window.webContents.executeJavaScript('document.getElementById("allow-computer").checked'),false);
+      assert.equal(await window.webContents.executeJavaScript('document.getElementById("auto-approve-routine").disabled'),true);
+      if (process.platform==='darwin') {
+        // Enabling the capability does not capture screens or deliver input.
+        await window.webContents.executeJavaScript('window.blooper.savePermissions({workspaces:{},apps:{},computer:true,autoApproveRoutine:true})');
+        const enabled = await window.webContents.executeJavaScript('window.blooper.state()');
+        assert.ok(enabled.runtime.devices.some(d=>d.kind==='desktop' && d.tools.includes('computer')));
+        assert.ok(enabled.runtime.devices.some(d=>d.kind==='desktop' && d.auto_approve_routine===true));
+        assert.equal((await window.webContents.executeJavaScript('window.blooper.permissions()')).autoApproveRoutine,true);
+        assert.equal(await window.webContents.executeJavaScript('window.blooper.savePermissions({workspaces:{},apps:{},computer:false,autoApproveRoutine:true}).then(()=>false,()=>true)'),true);
+        await window.webContents.executeJavaScript('window.blooper.savePermissions({workspaces:{},apps:{},computer:false})');
+        const disabled = await window.webContents.executeJavaScript('window.blooper.state()');
+        assert.equal(disabled.runtime.devices.some(d=>d.tools && d.tools.includes('computer')),false);
+        assert.equal(disabled.runtime.devices.some(d=>d.auto_approve_routine===true),false);
+      }
       await window.webContents.executeJavaScript('document.querySelector("[data-page=settings]").click()');
       await new Promise(r=>setTimeout(r,200));
       fs.writeFileSync(path.join(os.tmpdir(),'blooper-desktop-settings.png'),(await window.capturePage()).toPNG());
-      console.log('PASS: desktop onboarding, private runtime, local runner, QR pairing and settings navigation');
+      console.log('PASS: desktop onboarding, private runtime, local runner, QR pairing, settings and computer-control opt-in');
       finished = true; app.quit();
     } catch(error) { console.error(error); process.exitCode=1; finished=true; app.quit(); }
   });

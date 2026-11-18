@@ -3,6 +3,7 @@ const invoke = name => (...args) => ipcRenderer.invoke('blooper:' + name, ...arg
 contextBridge.exposeInMainWorld('blooper', {
   state: invoke('state'), pair: invoke('pair'), revoke: invoke('revoke'),
   permissions: invoke('permissions'), savePermissions: invoke('save-permissions'),
+  computerPermissions: invoke('computer-permissions'),
   chooseFolder: invoke('choose-folder'), chooseApp: invoke('choose-app'),
   saveProvider: invoke('save-provider'), deleteProvider: invoke('delete-provider'),
   preferences: invoke('preferences'), checkUpdates: invoke('check-updates'), installUpdate: invoke('install-update'),

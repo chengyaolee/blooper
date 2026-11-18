@@ -131,6 +131,7 @@ else {
     handle('revoke', id => api('/desktop/revoke', {id}));
     handle('permissions', () => api('/desktop/permissions'));
     handle('save-permissions', value => api('/desktop/permissions', value));
+    handle('computer-permissions', () => api('/desktop/computer/permissions', {}));
     handle('choose-folder', async () => {
       const result = await dialog.showOpenDialog(window, {title: 'Choose a workspace', properties: ['openDirectory']});
       return result.canceled ? null : result.filePaths[0];

@@ -50,7 +50,7 @@ func (c *Coordinator) RegisterLocalRunner(req EnrollRequest) error {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	d := &Device{ID: DeviceID(req.PublicKey), Name: req.Name, Kind: KindDesktop, OS: req.OS, PublicKey: req.PublicKey,
+	d := &Device{AutoApproveRoutine: req.AutoApproveRoutine, ID: DeviceID(req.PublicKey), Name: req.Name, Kind: KindDesktop, OS: req.OS, PublicKey: req.PublicKey,
 		Tools: req.Tools, Workspaces: req.Workspaces, Apps: req.Apps, GrantExpires: time.Now().Add(c.cfg.GrantTTL).Unix(), CreatedAt: time.Now().Unix()}
 	c.devices[d.ID] = d
 	return c.saveDevice(d)

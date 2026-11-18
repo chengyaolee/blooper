@@ -9,4 +9,12 @@ const output = path.join(__dirname, 'bin', target === 'windows' ? 'blooper.exe' 
 const result = spawnSync('go', ['build', '-trimpath', '-ldflags=-s -w', '-o', output, './cmd/blooper'], {
   cwd: path.join(__dirname, '..'), stdio: 'inherit', env: {...process.env, GOOS: target, CGO_ENABLED: '0'}
 });
-process.exit(result.status ?? 1);
+if (result.status !== 0) process.exit(result.status ?? 1);
+if (target === 'darwin') {
+  if (process.platform !== 'darwin') throw new Error('Build the macOS computer helper on macOS.');
+  const arch = process.env.GOARCH || ({arm64: 'arm64', x64: 'amd64'})[process.arch];
+  const triple = ({arm64: 'arm64-apple-macosx12.0', amd64: 'x86_64-apple-macosx12.0'})[arch];
+  if (!triple) throw new Error('Unsupported macOS architecture.');
+  const helper = spawnSync('xcrun', ['swiftc', '-O', '-target', triple, path.join(__dirname, 'native/Computer.swift'), '-o', path.join(__dirname, 'bin/blooper-computer')], {stdio: 'inherit'});
+  process.exit(helper.status ?? 1);
+}

@@ -7,6 +7,7 @@ import Observation
 import Security
 
 struct Device: Codable, Identifiable, Hashable {
+    let autoApproveRoutine: Bool?
     let id: String
     let name: String
     let kind: String  // phone, desktop, cloud
@@ -21,6 +22,7 @@ struct Device: Codable, Identifiable, Hashable {
 
 /// What a computer asks for when it wants to be enrolled.
 struct Enrollment: Codable {
+    let autoApproveRoutine: Bool?
     let name: String
     let kind: String
     let os: String
@@ -53,6 +55,7 @@ struct JobEvent: Codable, Identifiable, Hashable {
 }
 
 struct Job: Codable, Identifiable, Hashable {
+    let screen: ComputerScreen?
     let id: String
     let transcript: String
     let state: String
@@ -69,6 +72,12 @@ struct Job: Codable, Identifiable, Hashable {
         ["succeeded", "failed", "cancelled", "expired", "needs_reconciliation"].contains(state)
     }
     var pendingApproval: JobAction? { actions?.first { $0.status == "awaiting_approval" } }
+}
+
+struct ComputerScreen: Codable, Hashable {
+    let data: String
+    let width: Int
+    let height: Int
 }
 
 struct APIError: LocalizedError {

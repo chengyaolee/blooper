@@ -31,6 +31,7 @@ func NewOllamaClient(baseURL string) *OllamaClient {
 type ollamaMessage struct {
 	Role      string           `json:"role"`
 	Content   string           `json:"content"`
+	Images    []string         `json:"images,omitempty"`
 	ToolCalls []ollamaToolCall `json:"tool_calls,omitempty"`
 }
 
@@ -86,6 +87,9 @@ func (c *OllamaClient) mapMessages(messages []ChatMessage) []ollamaMessage {
 			Role:      m.Role,
 			Content:   m.Content,
 			ToolCalls: toOllamaCalls(m.ToolCalls),
+		}
+		for _, img := range m.Images {
+			res[i].Images = append(res[i].Images, img.Data)
 		}
 	}
 	return res

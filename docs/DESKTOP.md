@@ -1,7 +1,7 @@
 # blooper apps: local first
 
 The desktop app hosts the coordinator, agents, chat and a local runner in one process tree.
-Install it on a Mac or Windows computer, add provider credentials in Settings, and pair an iPhone
+Run it from a clone or a local development build, add provider credentials in Settings, and pair an iPhone
 on the same Wi-Fi. There is no blooper account, hosted relay, Tailscale dependency, port forwarding,
 or customer-managed backend in this phase.
 
@@ -13,7 +13,8 @@ or customer-managed backend in this phase.
 2. Optionally connect Deepgram. Its validation sends generated silence, not recorded user audio.
    Without it, the iPhone can continue using on-device transcription.
 3. In **Permissions**, choose workspace folders and their test commands, and optionally select
-   applications. Save the changes. Remote app launches still require explicit phone approval.
+   applications. Save the changes. Remote app launches require phone approval unless you
+   enable routine auto-approval under Computer control.
 4. Open **Devices**, choose the Wi-Fi interface if several are listed, and create a QR code.
    Open the iPhone app, choose **Scan pairing code**, and scan the desktop's code.
 5. Pair another Mac or Windows computer from the iPhone's **Computers** screen. Choose the
@@ -36,6 +37,17 @@ Closing the desktop window keeps its runtime running; reopen it through the menu
 **Quit blooper** stops it and its running commands. Enable **Launch blooper when I sign in** in
 Settings for automatic startup in installed builds. It is off until explicitly enabled.
 The computer must be awake and running blooper to execute jobs.
+
+On macOS 14 or newer, **Permissions → Computer control** optionally enables main-display
+screenshots and native mouse/keyboard actions from phone requests. Choose **Set up Mac
+permissions…**, grant Accessibility and Screen & System Audio Recording, reopen blooper,
+then enable the control checkbox and save. Each input requires phone approval by default.
+Optionally enable **Auto-approve routine steps** for allowed app launches, scrolling, and
+navigation or drafting approved by a separate AI screen review. Consequential, uncertain,
+or failed reviews still ask; the AI can misjudge a step. Screenshots
+are shared with the selected model and paired phone; use OpenAI or a vision-capable Ollama
+model with tool support. See [Mac computer control](REMOTE.md#mac-computer-control) for
+privacy, limits, and device verification.
 
 ## Local credentials and transport
 
@@ -71,7 +83,25 @@ an APNs signing key. Relay connectivity, cross-network access and cloud executio
 
 ## Develop from a clone
 
-Requires Go matching `go.mod`, Node.js 22 or later, and macOS or Windows:
+Public installers are not published yet. On macOS, the recommended source setup from the
+repository root is:
+
+```sh
+./scripts/setup-desktop.sh --ios --launch
+```
+
+This checks prerequisites, installs npm dependencies, builds the Go runtime and Swift helper,
+generates the iPhone project, and launches the app. Omit `--ios` if you only need the desktop,
+or use `--check --ios` to check prerequisites without installing or building anything.
+It does not change credentials, CLI configuration, or OS permissions. See the
+[README setup walkthrough](../README.md#set-up-from-source-on-a-mac) for model setup, Mac
+permissions, phone signing, pairing, and routine auto-approval. `make setup-desktop` builds
+the desktop without generating the iPhone project or launching it.
+
+Requires Go matching `go.mod`, Node.js 22 or later, and macOS or Windows.
+
+macOS builds also require Xcode Command Line Tools (`xcode-select --install`) to compile the
+bundled Swift computer helper. Computer control requires macOS 14 or later.
 
 ```sh
 make desktop
@@ -122,9 +152,8 @@ Before distributing an install-and-run production release:
 - Test installation, OS credential storage, login startup, firewall consent, and an upgrade from
   a previous installed version on both desktop platforms. macOS automatic updates need a signed
   application. Cross-compilation does not replace a Windows installation test.
-- Review build-tool dependency advisories before release. The shipped updater dependencies pass
-  `npm audit --omit=dev`; the current stable packaging toolchain still reports development-only
-  advisories through its glob matcher, for which npm has no published patched picomatch version.
+- Review runtime and build-tool dependency advisories before release using `npm audit` and
+  `npm audit --omit=dev` from `desktop/`.
 
 Automatic updates check and download in installed builds when enabled. The UI offers
 **Restart and install update** and refuses that restart while chat or remote jobs are active.
@@ -141,6 +170,7 @@ also be exercised on a physical iPhone.
 ```sh
 go test -race ./internal/... ./cmd/...
 go vet ./internal/... ./cmd/...
+python3 scripts/test-setup-desktop.py
 cd desktop && npm test
 ```
 

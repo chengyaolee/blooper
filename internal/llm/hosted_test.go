@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -57,6 +58,22 @@ func TestOpenAIGenerate(t *testing.T) {
 	m := resp.Message
 	if len(m.ToolCalls) != 1 || m.ToolCalls[0].Function.Arguments != `{"x":1}` {
 		t.Errorf("message %+v", m)
+	}
+}
+
+func TestScreenshotProviderFormats(t *testing.T) {
+	msg := ChatMessage{Role: "user", Content: "screen", Images: []Image{{Data: "jpeg-data", Width: 20, Height: 10}}}
+	body := openAIRequest(&ChatRequest{Model: OpenAIModel, Messages: []ChatMessage{msg}}, false)
+	data, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(data, []byte(`"url":"data:image/jpeg;base64,jpeg-data"`)) || bytes.Contains(data, []byte(`"images"`)) {
+		t.Fatalf("OpenAI vision input was not encoded correctly: %s", data)
+	}
+	local := NewOllamaClient("").mapMessages([]ChatMessage{msg})
+	if len(local[0].Images) != 1 || local[0].Images[0] != "jpeg-data" {
+		t.Fatal("Ollama lost image input")
 	}
 }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct BlooperRemoteApp: App {
@@ -348,6 +349,14 @@ struct JobView: View {
                     Text(job.detail)
                     Text("“\(job.transcript)”").foregroundStyle(.secondary)
                 }
+                if let screen = job.screen, let data = Data(base64Encoded: screen.data), let image = UIImage(data: data) {
+                    Section("Latest Mac screen") {
+                        Image(uiImage: image).resizable().scaledToFit()
+                            .accessibilityLabel("Latest screenshot from the controlled Mac, \(screen.width) by \(screen.height) pixels")
+                        Text("Last captured screen; it may have changed. Approval follows this Mac’s settings.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
                 if let action = job.pendingApproval {
                     Section("Needs your approval") {
                         Text(action.summary).font(.headline)
@@ -481,6 +490,9 @@ struct DevicesView: View {
                         Text("\(device.kind) · \(device.os) · \(device.id)").font(.caption).foregroundStyle(.secondary)
                         if let tools = device.tools, !tools.isEmpty {
                             Text("Tools: \(tools.joined(separator: ", "))").font(.footnote)
+                            if tools.contains("computer") {
+                                Text(device.autoApproveRoutine == true ? "Routine steps: auto-approve" : "Computer input: ask every time").font(.footnote)
+                            }
                         }
                         if let workspaces = device.workspaces, !workspaces.isEmpty {
                             Text("Workspaces: \(workspaces.joined(separator: ", "))").font(.footnote)
@@ -569,7 +581,12 @@ struct AddComputerView: View {
                     Section {
                         Button("Enroll") { enroll() }.buttonStyle(.borderedProminent)
                     } footer: {
-                        Text("Routine tools run on this computer without asking for 90 days. Opening an app always asks first.")
+                        Text("Routine tools run on this computer without asking for 90 days. If computer control is enabled, screenshots are shared with the planner and your phone.")
+                        if pending.autoApproveRoutine == true {
+                            Text("Routine auto-approval is on: allowed apps and scrolling run automatically. An AI review can allow routine navigation and drafting; consequential or uncertain steps ask. AI reviews can make mistakes.")
+                        } else {
+                            Text("Routine auto-approval is off. Opening apps and computer input ask first.")
+                        }
                     }
                 } else {
                     Section {

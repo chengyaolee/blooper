@@ -108,6 +108,18 @@ func (o *Orchestrator) Begin(userMessage string) []string {
 // AddStep appends one step to the scratchpad. Steps are kept whole so that an
 // assistant tool call is never separated from its results.
 func (o *Orchestrator) AddStep(msgs ...llm.ChatMessage) {
+	// Keep only the newest observation. Screenshots are never summarized or
+	// written to the artifact store, and old screens must not guide new clicks.
+	for _, msg := range msgs {
+		if len(msg.Images) > 0 {
+			for _, step := range o.steps {
+				for i := range step {
+					step[i].Images = nil
+				}
+			}
+			break
+		}
+	}
 	o.steps = append(o.steps, msgs)
 	o.stepCount++
 }

@@ -49,6 +49,38 @@ func call(id, name, args string) llm.ChatMessage {
 	return llm.ChatMessage{Role: "assistant", ToolCalls: []llm.ToolCall{{ID: id, Function: llm.ToolCallFunction{Name: name, Arguments: args}}}}
 }
 
+type screenTool struct{ bigLogTool }
+
+func (screenTool) Name() string            { return "screen" }
+func (screenTool) Schema() llm.FunctionDef { return llm.FunctionDef{Name: "screen"} }
+func (screenTool) Execute(context.Context, json.RawMessage) (*tools.ToolResult, error) {
+	return &tools.ToolResult{Output: "screen captured", Image: &llm.Image{Data: "private-screenshot", Width: 20, Height: 10}}, nil
+}
+
+func TestComputerScreensRemainVisionInputs(t *testing.T) {
+	reg := tools.NewRegistry()
+	reg.Register(screenTool{})
+	eng := &scriptEngine{script: []llm.ChatMessage{call("1", "screen", `{}`), call("2", "screen", `{}`)}}
+	a := NewAgent(&AgentConfig{Tools: []string{"screen"}}, eng, reg)
+	a.Memory.Rules = nil
+	if _, err := a.Run(context.Background(), "look at my screen"); err != nil {
+		t.Fatal(err)
+	}
+	images := 0
+	for i, msg := range eng.last {
+		if strings.Contains(msg.Content, "private-screenshot") {
+			t.Fatal("screen became text or artifact")
+		}
+		images += len(msg.Images)
+		if len(msg.Images) > 0 && (msg.Role != "user" || eng.last[i-1].Role != "tool") {
+			t.Fatal("vision input broke tool reply order")
+		}
+	}
+	if images != 1 {
+		t.Fatalf("expected only latest screenshot, got %d", images)
+	}
+}
+
 func TestToolOutputNeverFloodsContext(t *testing.T) {
 	reg := tools.NewRegistry()
 	reg.Register(bigLogTool{})

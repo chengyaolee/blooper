@@ -10,6 +10,14 @@ type ChatMessage struct {
 	Content    string     `json:"content"`
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string     `json:"tool_call_id,omitempty"`
+	Images     []Image    `json:"images,omitempty"` // provider adapters encode these as image inputs
+}
+
+// Image is an in-memory screenshot, never an artifact or text tool result.
+type Image struct {
+	Data   string `json:"data"` // base64 JPEG
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
 // ToolCall represents a function call requested by the model.

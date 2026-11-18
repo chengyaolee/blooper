@@ -59,7 +59,10 @@ Arrows start at the side that opens the connection. Phones and runners only make
 
 ## Setup
 
-Quick start: run `scripts/setup.sh`. It checks tools, builds, detects Tailscale for HTTPS (or falls back to LAN), writes the config, offers to set up this computer as a runner, and prints the next commands. Add `--runner` to skip the runner question, or `--lan` to skip Tailscale. The steps below are what it does.
+For the recommended bundled macOS desktop setup, run `./scripts/setup-desktop.sh --ios --launch`
+and follow the [README walkthrough](../README.md#set-up-from-source-on-a-mac).
+
+For the advanced CLI setup below, run `scripts/setup.sh`. It checks tools, builds, detects Tailscale for HTTPS (or falls back to LAN), writes the config, offers to set up this computer as a runner, and prints the next commands. Add `--runner` to skip the runner question, or `--lan` to skip Tailscale. The steps below are what it does.
 
 Then `make serve`, and `make runner` on each computer.
 
@@ -98,12 +101,85 @@ The iOS app allows plain HTTP only to local-network addresses.
 
 - **Idempotent submit.** The same phone and `client_request_id` return the same job. Reusing the ID with a different request is refused.
 - **"Running" means claimed.** A job is `queued` until its runner polls and takes the lease. If the runner is asleep or offline the job waits in `waiting_for_target` and says why.
-- **Standing grant.** Enrolling a computer grants its routine tools for 90 days. `app_open` always asks first, and so does any tool once the grant has expired.
+- **Standing grant.** Enrolling a computer grants its routine tools for 90 days. `app_open` asks first unless routine auto-approval is enabled. Every tool asks once the grant has expired.
+- **Computer control.** An explicitly enabled Mac runner can observe the main display and propose mouse/keyboard input. Inputs need single-use phone approval by default; the optional routine auto-approval policy is described below. Screenshots run under the standing grant.
 - **Leases.** A runner renews its lease by polling. If it goes silent for 90 seconds with an action in flight, the job becomes `needs_reconciliation` and is not retried, because the action may or may not have happened. A runner that returns late has its result refused.
 - **Cancel.** Recorded at once as `cancel_requested`. The job becomes `cancelled` only when the runner reports that the process has stopped. Completed actions stay in the journal.
 - **Deadline.** One hour by default (`remote.job_timeout`), enforced whether or not the phone is connected.
 - **Restart.** Jobs that had not acted yet start over. Jobs that had acted end as `failed` or `needs_reconciliation`, because the planner's context is not kept across a restart.
 - **A job that ran nothing is `failed`**, even if the model replies politely.
+
+## Mac computer control
+
+The optional `computer` runner tool uses a bundled Swift helper and native macOS
+ScreenCaptureKit/CoreGraphics APIs on macOS 14 or newer. It supports `screenshot`, `click`,
+`double_click`, `right_click`, `type`, `key`, and `scroll`. It uses the existing vision-capable
+planner's function tools, rather than OpenAI's built-in Responses API computer-use tool.
+No Python installation, browser driver, or additional provider credential is needed.
+
+Enable it on the desktop Permissions page after requesting macOS Accessibility and Screen
+Recording access. Permission prompts can only be requested from the authenticated local
+desktop UI. The phone/planner cannot enable control or grant OS permissions. For a separate
+CLI runner, set `computer: true` in its local YAML and put the built `blooper-computer` helper
+beside the runner executable. In development, macOS may list that helper separately in Privacy
+& Security. Reopen blooper after changing OS permissions.
+
+The runner first requires a screenshot for the job and checks for an unlocked console session
+and screen permission before acting. Coordinates refer to the screenshot, resized to at most
+1600 pixels on its longest edge, including on Retina displays. Click bounds, literal text,
+named keys, scroll directions, and sizes are validated at both coordinator and runner. The
+helper receives JSON through stdin, without a shell or provider credentials. After each input,
+it captures a new screen for the planner to inspect. Do not operate the Mac while a job runs.
+
+Screenshots are binary image inputs, kept separate from text tool output, artifacts, summaries,
+and the persisted job journal. Only the latest screenshot stays in the model's working context.
+The phone shows the job's most recent captured screen; this is a snapshot, not a live feed.
+That preview remains in coordinator memory until restart. With OpenAI, screenshots leave the
+Mac for inference. With Ollama, select a model supporting both images and tools; the default
+text-only `qwen2.5:3b` cannot perform screen tasks. The action journal still stores typed text
+and action arguments; do not use it to enter passwords or secrets.
+
+Each input requires approval by default. **Auto-approve routine steps** on the desktop
+Permissions page (CLI: `auto_approve_routine: true`, requiring `computer: true`) opts into
+automatic allowed-app launches and scrolling while the 90-day grant is valid. Other input
+is reviewed separately using the current screenshot, original request, and exact proposed
+action. The review has no tools and runs outside the coordinator lock; the planner cannot
+supply its own risk classification. Only a valid `routine` review bypasses confirmation.
+Critical, unknown, missing, malformed, timed-out, and failed reviews ask for approval. Review
+requests use the selected provider and can add inference latency and cost. AI classification
+is best effort and can misjudge a target; it is not an OS security boundary.
+
+The review policy treats sending, publishing, submitting forms, purchasing, deleting,
+overwriting files, account/security changes, secrets, and executable commands as critical.
+Commit/editing keys outside a small navigation allowlist (including Enter, Backspace/Delete,
+and Cmd+S) and text containing control characters always ask, independently of the AI review.
+The setting is stored locally, advertised at enrollment, and cannot be enabled by the planner
+or changed during an active job. Auto-approved actions and review reasons remain in the job
+timeline. Web-search approvals and expired-grant checks still apply.
+
+A rejected action is not retried;
+cancelling stops subsequent actions but cannot undo input already delivered. Lease loss keeps
+the existing reconciliation behavior. Two computer-control jobs cannot share the same display
+at once. This is broad desktop access, separate from the app-launch allowlist; planner rules
+prohibit using terminals or scripts to bypass the typed tools, but this is not OS app isolation.
+Windows control, secondary displays, direct manual phone gestures, waking/unlocking the Mac,
+and connectivity outside the LAN are not implemented.
+
+To check a desktop build without capturing the screen or delivering input:
+
+```sh
+cd desktop
+npm run build:runtime
+./bin/blooper-computer --self-test
+```
+
+For a physical-device check, enable the permissions, pair the phone, and request a harmless
+note in a test application. Review the initial screenshot, reject an input and verify it did
+not run, then try a new job and approve its inputs. Verify Unicode typing, Retina click
+positions, scrolling, cancellation, a locked Mac, and denied OS permissions. Automated Go
+checks cover argument validation, image formats, approval challenges, lease fencing, and
+the absence of screenshots in saved jobs; actual OS input and permission dialogs require
+this device check.
 
 **API**
 

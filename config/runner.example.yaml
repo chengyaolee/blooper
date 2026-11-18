@@ -18,3 +18,14 @@ apps:                                   # enables app_open; name -> launch comma
   # notepad: [notepad.exe]              # Windows
 
 web_search: false                       # enables web_search (typical for kind: cloud)
+
+# macOS only: broad main-display control, disabled by default. Build the native
+# helper with desktop/npm run build:runtime and place blooper-computer beside
+# the runner executable. Grant it Accessibility and Screen Recording access.
+# Screenshots reach the planner and paired phone; inputs need approval by default.
+computer: false
+
+# Opt in to routine steps without repeated approvals. Configured apps and
+# scrolling run automatically; other input needs a separate AI screen review.
+# Consequential, uncertain, or failed reviews still ask. Requires computer: true.
+auto_approve_routine: false

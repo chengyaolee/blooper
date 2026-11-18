@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Set up blooper on this computer, and optionally this computer as a runner.
+# Advanced CLI flow; use setup-desktop.sh for the bundled desktop/iPhone setup.
 #
 #   scripts/setup.sh            interactive; Enter accepts each default
 #   scripts/setup.sh --lan      skip Tailscale; serve plain HTTP on the LAN

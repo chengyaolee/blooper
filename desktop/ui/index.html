@@ -41,7 +41,17 @@
     <h2>Workspaces</h2><p>Allow tests in selected folders. Commands run on this computer.</p>
     <div id="workspace-list"></div>
     <div class="inline"><button id="choose-workspace">Choose a folder…</button><label for="test-preset">Test command</label><select id="test-preset"><option value="go">Go tests</option><option value="npm">npm test</option><option value="python">Python · pytest</option><option value="cargo">Rust · cargo test</option></select></div>
-    <h2>Applications</h2><p>Opening an app always asks for approval on your phone.</p><div id="apps-list"></div><button id="choose-app">Allow an application…</button>
+    <h2>Applications</h2><p>Opening an app asks for phone approval unless routine auto-approval is enabled below.</p><div id="apps-list"></div><button id="choose-app">Allow an application…</button>
+    <div id="computer-permissions" hidden>
+      <h2>Computer control <span class="optional">macOS 14+</span></h2>
+      <label class="check"><input type="checkbox" id="allow-computer">Allow my paired phone to control this Mac</label>
+      <p>Blooper can see the main display and use the mouse and keyboard in any app. Screenshots go to your selected model provider and paired phone. Each input asks for phone approval by default.</p>
+      <label class="check"><input type="checkbox" id="auto-approve-routine" disabled>Auto-approve routine steps</label>
+      <p class="secondary">Allowed apps can open automatically. Scrolling and steps an AI review identifies as routine navigation or drafting can continue without interruption. Steps identified as sending, purchases, deletion, account changes, or uncertain still ask. The review can make mistakes and uses your selected model.</p>
+      <p class="secondary">Use OpenAI or an Ollama model that understands images.</p>
+      <button id="setup-computer">Set up Mac permissions…</button>
+      <p class="secondary">Allow Accessibility and Screen &amp; System Audio Recording in macOS Privacy &amp; Security, then reopen blooper. Keep this Mac awake and unlocked. Use Cancel in the phone’s job screen to stop a task.</p>
+    </div>
     <div class="footer"><button id="save-permissions" class="primary">Save permissions</button><span class="secondary">Changes apply after active jobs finish.</span></div>
   </section>
   <section id="settings" class="page" hidden>

@@ -224,6 +224,10 @@ func (c *Coordinator) handleEnrollStart(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
+	if req.AutoApproveRoutine && (req.Kind != KindDesktop || req.OS != "darwin" || !slices.Contains(req.Tools, "computer")) {
+		fail(w, 400, "routine auto-approval requires a Mac computer-control runner")
+		return
+	}
 	if verifyRequest(r, body, req.PublicKey) != nil {
 		fail(w, 401, "the request must be signed by the key being enrolled")
 		return
@@ -267,7 +271,8 @@ func (c *Coordinator) handleEnrollApprove(r *http.Request, _ *Device, _ []byte) 
 	delete(c.enrolls, code)
 	now := time.Now()
 	d := &Device{
-		ID: DeviceID(p.req.PublicKey), Name: p.req.Name, Kind: p.req.Kind, OS: p.req.OS, PublicKey: p.req.PublicKey,
+		AutoApproveRoutine: p.req.AutoApproveRoutine,
+		ID:                 DeviceID(p.req.PublicKey), Name: p.req.Name, Kind: p.req.Kind, OS: p.req.OS, PublicKey: p.req.PublicKey,
 		Tools: p.req.Tools, Workspaces: p.req.Workspaces, Apps: p.req.Apps,
 		GrantExpires: now.Add(c.cfg.GrantTTL).Unix(), CreatedAt: now.Unix(),
 	}

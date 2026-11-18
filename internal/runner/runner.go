@@ -39,13 +39,15 @@ type Workspace struct {
 }
 
 type Config struct {
-	Coordinator string               `yaml:"coordinator"` // base URL, e.g. https://blooper.example.ts.net
-	Name        string               `yaml:"name"`        // shown on the phone; default: hostname
-	Kind        string               `yaml:"kind"`        // desktop (default) or cloud
-	KeyFile     string               `yaml:"key_file"`    // default: runner.key beside the config
-	Workspaces  map[string]Workspace `yaml:"workspaces"`  // enables repo_run_tests
-	Apps        map[string][]string  `yaml:"apps"`        // name -> argv; enables app_open
-	WebSearch   bool                 `yaml:"web_search"`  // enables web_search
+	Coordinator        string               `yaml:"coordinator"`          // base URL, e.g. https://blooper.example.ts.net
+	Name               string               `yaml:"name"`                 // shown on the phone; default: hostname
+	Kind               string               `yaml:"kind"`                 // desktop (default) or cloud
+	KeyFile            string               `yaml:"key_file"`             // default: runner.key beside the config
+	Workspaces         map[string]Workspace `yaml:"workspaces"`           // enables repo_run_tests
+	Apps               map[string][]string  `yaml:"apps"`                 // name -> argv; enables app_open
+	WebSearch          bool                 `yaml:"web_search"`           // enables web_search
+	Computer           bool                 `yaml:"computer"`             // opt-in main-display control (macOS)
+	AutoApproveRoutine bool                 `yaml:"auto_approve_routine"` // opt-in routine computer steps and configured app launches
 	// AllowInsecure permits an http:// coordinator URL that is not loopback.
 	// Without TLS, anyone on the network path can forge actions to this runner.
 	AllowInsecure bool `yaml:"allow_insecure"`
@@ -69,12 +71,15 @@ func checkCoordinatorURL(raw string, allowInsecure bool) error {
 }
 
 type Runner struct {
-	cfg     Config
-	priv    ed25519.PrivateKey
-	client  *http.Client
-	mu      sync.Mutex
-	workers sync.WaitGroup
-	running map[string]context.CancelFunc // in-flight actions
+	cfg                       Config
+	priv                      ed25519.PrivateKey
+	client                    *http.Client
+	mu                        sync.Mutex
+	workers                   sync.WaitGroup
+	running                   map[string]context.CancelFunc // in-flight actions
+	computerMu                sync.Mutex
+	observedJob               string
+	screenWidth, screenHeight int
 }
 
 // Load reads the config and loads or creates the runner's key.
@@ -99,6 +104,17 @@ func Load(path string) (*Runner, error) {
 	}
 	if cfg.Kind == "" {
 		cfg.Kind = remote.KindDesktop
+	}
+	if cfg.AutoApproveRoutine && !cfg.Computer {
+		return nil, fmt.Errorf("auto_approve_routine requires computer: true")
+	}
+	if cfg.Computer && (runtime.GOOS != "darwin" || cfg.Kind != remote.KindDesktop) {
+		return nil, fmt.Errorf("computer control requires a macOS desktop runner")
+	}
+	if cfg.Computer {
+		if _, err := os.Stat(computerHelper()); err != nil {
+			return nil, fmt.Errorf("computer helper is missing; build with npm run build:runtime in desktop")
+		}
 	}
 	for name, ws := range cfg.Workspaces {
 		if ws.Path == "" || len(ws.TestCmd) == 0 {
@@ -144,7 +160,8 @@ func loadKey(path string) (ed25519.PrivateKey, error) {
 
 func (r *Runner) capabilities() remote.EnrollRequest {
 	req := remote.EnrollRequest{
-		Name: r.cfg.Name, Kind: r.cfg.Kind, OS: runtime.GOOS,
+		AutoApproveRoutine: r.cfg.AutoApproveRoutine,
+		Name:               r.cfg.Name, Kind: r.cfg.Kind, OS: runtime.GOOS,
 		PublicKey: r.priv.Public().(ed25519.PublicKey),
 		Tools:     []string{}, Workspaces: []string{}, Apps: []string{},
 	}
@@ -164,6 +181,9 @@ func (r *Runner) capabilities() remote.EnrollRequest {
 	}
 	if r.cfg.WebSearch {
 		req.Tools = append(req.Tools, "web_search")
+	}
+	if r.cfg.Computer {
+		req.Tools = append(req.Tools, "computer")
 	}
 	return req
 }
@@ -280,11 +300,14 @@ func (r *Runner) execute(parent context.Context, a remote.RunnerAction) {
 
 	res := remote.RunnerResult{ActionID: a.ID, JobID: a.JobID, Lease: a.Lease, Status: remote.ActionFailed}
 	arg, err := remote.ParseArg(a.Tool, a.Args)
-	log.Printf("action %s: %s %q", a.ID, a.Tool, arg)
+	// Computer arguments may include private text; keep them out of diagnostics.
+	log.Printf("action %s: %s", a.ID, a.Tool)
 	// Local policy is enforced here, whatever the coordinator asked for.
 	switch {
 	case err != nil:
 		res.Output = err.Error()
+	case a.Tool == "computer" && r.cfg.Computer:
+		res.Status, res.Output, res.Image = r.useComputer(ctx, a.JobID, a.Args)
 	case a.Tool == "repo_run_tests":
 		res.Status, res.ExitCode, res.Output = r.runTests(ctx, arg)
 	case a.Tool == "app_open":

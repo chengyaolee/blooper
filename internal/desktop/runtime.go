@@ -168,6 +168,7 @@ func Run(ctx context.Context, dir string) error {
 	control.HandleFunc("POST /desktop/revoke", d.handleRevoke)
 	control.HandleFunc("GET /desktop/permissions", d.handlePermissions)
 	control.HandleFunc("POST /desktop/permissions", d.handlePermissions)
+	control.HandleFunc("POST /desktop/computer/permissions", d.handleComputerPermissions)
 	control.Handle("/", chat.Routes())
 	adminServer := &http.Server{Handler: d.authorize(control), ReadHeaderTimeout: 10 * time.Second}
 	defer adminServer.Close()
@@ -424,7 +425,7 @@ func (d *Runtime) handlePermissions(w http.ResponseWriter, r *http.Request) {
 	d.permissionsMu.Lock()
 	defer d.permissionsMu.Unlock()
 	if r.Method == http.MethodGet {
-		respond(w, 200, map[string]any{"workspaces": d.runnerConfig.Workspaces, "apps": d.runnerConfig.Apps})
+		respond(w, 200, map[string]any{"workspaces": d.runnerConfig.Workspaces, "apps": d.runnerConfig.Apps, "computer": d.runnerConfig.Computer, "autoApproveRoutine": d.runnerConfig.AutoApproveRoutine, "computerSupported": runtime.GOOS == "darwin"})
 		return
 	}
 	if d.coord.HasActiveJobs() {
@@ -432,10 +433,20 @@ func (d *Runtime) handlePermissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var cfg struct {
-		Workspaces map[string]runner.Workspace `json:"workspaces"`
-		Apps       map[string][]string         `json:"apps"`
+		Workspaces         map[string]runner.Workspace `json:"workspaces"`
+		Apps               map[string][]string         `json:"apps"`
+		Computer           bool                        `json:"computer"`
+		AutoApproveRoutine bool                        `json:"autoApproveRoutine"`
 	}
 	if !decode(w, r, &cfg) {
+		return
+	}
+	if cfg.Computer && runtime.GOOS != "darwin" {
+		respond(w, 400, map[string]string{"error": "Computer control is currently available on Mac"})
+		return
+	}
+	if cfg.AutoApproveRoutine && !cfg.Computer {
+		respond(w, 400, map[string]string{"error": "Enable computer control before routine auto-approval"})
 		return
 	}
 	for name, workspace := range cfg.Workspaces {
@@ -458,6 +469,8 @@ func (d *Runtime) handlePermissions(w http.ResponseWriter, r *http.Request) {
 	old := d.runnerConfig
 	d.stopRunner()
 	d.runnerConfig.Workspaces, d.runnerConfig.Apps = cfg.Workspaces, cfg.Apps
+	d.runnerConfig.Computer = cfg.Computer
+	d.runnerConfig.AutoApproveRoutine = cfg.AutoApproveRoutine
 	if err := d.startRunner(); err != nil {
 		d.runnerConfig = old
 		_ = d.startRunner()
@@ -465,6 +478,18 @@ func (d *Runtime) handlePermissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respond(w, 200, map[string]bool{"saved": true})
+}
+
+func (d *Runtime) handleComputerPermissions(w http.ResponseWriter, r *http.Request) {
+	if runtime.GOOS != "darwin" {
+		respond(w, 400, map[string]string{"error": "Computer control is currently available on Mac"})
+		return
+	}
+	if err := runner.RequestComputerPermissions(r.Context()); err != nil {
+		respond(w, 400, map[string]string{"error": err.Error()})
+		return
+	}
+	respond(w, 200, map[string]bool{"requested": true})
 }
 
 func computerName() string {

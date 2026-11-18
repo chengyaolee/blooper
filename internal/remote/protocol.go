@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/chengyaolee/blooper/internal/llm"
+
 	"github.com/skip2/go-qrcode"
 )
 
@@ -61,19 +63,20 @@ const (
 // All times on the wire are unix seconds; 0 means unset.
 
 type Device struct {
-	ID           string   `json:"id"` // DeviceID(PublicKey)
-	Name         string   `json:"name"`
-	Kind         string   `json:"kind"`
-	OS           string   `json:"os"`
-	PublicKey    []byte   `json:"public_key"`
-	Tools        []string `json:"tools"`      // capabilities the owner confirmed at enrollment
-	Workspaces   []string `json:"workspaces"` // names only; paths and commands stay on the runner
-	Apps         []string `json:"apps"`
-	GrantExpires int64    `json:"grant_expires"` // standing grant for routine tools ends here
-	LastSeen     int64    `json:"last_seen"`
-	Reachable    bool     `json:"reachable"` // computed on read
-	Revoked      bool     `json:"revoked"`
-	CreatedAt    int64    `json:"created_at"`
+	AutoApproveRoutine bool     `json:"auto_approve_routine,omitempty"`
+	ID                 string   `json:"id"` // DeviceID(PublicKey)
+	Name               string   `json:"name"`
+	Kind               string   `json:"kind"`
+	OS                 string   `json:"os"`
+	PublicKey          []byte   `json:"public_key"`
+	Tools              []string `json:"tools"`      // capabilities the owner confirmed at enrollment
+	Workspaces         []string `json:"workspaces"` // names only; paths and commands stay on the runner
+	Apps               []string `json:"apps"`
+	GrantExpires       int64    `json:"grant_expires"` // standing grant for routine tools ends here
+	LastSeen           int64    `json:"last_seen"`
+	Reachable          bool     `json:"reachable"` // computed on read
+	Revoked            bool     `json:"revoked"`
+	CreatedAt          int64    `json:"created_at"`
 }
 
 type Option struct {
@@ -82,6 +85,7 @@ type Option struct {
 }
 
 type Action struct {
+	Image           *llm.Image      `json:"-"` // consumed by the planner, never persisted
 	ID              string          `json:"id"`
 	Tool            string          `json:"tool"`
 	Args            json.RawMessage `json:"args"`
@@ -105,25 +109,26 @@ type Event struct {
 }
 
 type Job struct {
-	ID              string    `json:"id"`
-	DeviceID        string    `json:"device_id"` // the phone that asked
-	ClientRequestID string    `json:"client_request_id"`
-	PayloadHash     string    `json:"payload_hash"`
-	Transcript      string    `json:"transcript"`
-	Target          string    `json:"target"` // "", "cloud", or a device ID
-	Workspace       string    `json:"workspace,omitempty"`
-	State           string    `json:"state"`
-	Detail          string    `json:"detail"` // wait reason, failure reason, or acknowledgment
-	RunnerID        string    `json:"runner_id,omitempty"`
-	RunnerName      string    `json:"runner_name,omitempty"`
-	Deadline        int64     `json:"deadline"`
-	Result          string    `json:"result,omitempty"`
-	Question        string    `json:"question,omitempty"`
-	Options         []Option  `json:"options,omitempty"`
-	Actions         []*Action `json:"actions"`
-	Events          []Event   `json:"events"`
-	CreatedAt       int64     `json:"created_at"`
-	UpdatedAt       int64     `json:"updated_at"`
+	Screen          *llm.Image `json:"screen,omitempty"` // latest observation; omitted from the journal
+	ID              string     `json:"id"`
+	DeviceID        string     `json:"device_id"` // the phone that asked
+	ClientRequestID string     `json:"client_request_id"`
+	PayloadHash     string     `json:"payload_hash"`
+	Transcript      string     `json:"transcript"`
+	Target          string     `json:"target"` // "", "cloud", or a device ID
+	Workspace       string     `json:"workspace,omitempty"`
+	State           string     `json:"state"`
+	Detail          string     `json:"detail"` // wait reason, failure reason, or acknowledgment
+	RunnerID        string     `json:"runner_id,omitempty"`
+	RunnerName      string     `json:"runner_name,omitempty"`
+	Deadline        int64      `json:"deadline"`
+	Result          string     `json:"result,omitempty"`
+	Question        string     `json:"question,omitempty"`
+	Options         []Option   `json:"options,omitempty"`
+	Actions         []*Action  `json:"actions"`
+	Events          []Event    `json:"events"`
+	CreatedAt       int64      `json:"created_at"`
+	UpdatedAt       int64      `json:"updated_at"`
 
 	// The execution lease. Not persisted: a coordinator restart drops all leases.
 	lease        string
@@ -147,13 +152,14 @@ type PairRequest struct {
 }
 
 type EnrollRequest struct {
-	Name       string   `json:"name"`
-	Kind       string   `json:"kind"`
-	OS         string   `json:"os"`
-	PublicKey  []byte   `json:"public_key"`
-	Tools      []string `json:"tools"`
-	Workspaces []string `json:"workspaces"`
-	Apps       []string `json:"apps"`
+	AutoApproveRoutine bool     `json:"auto_approve_routine,omitempty"`
+	Name               string   `json:"name"`
+	Kind               string   `json:"kind"`
+	OS                 string   `json:"os"`
+	PublicKey          []byte   `json:"public_key"`
+	Tools              []string `json:"tools"`
+	Workspaces         []string `json:"workspaces"`
+	Apps               []string `json:"apps"`
 }
 
 type EnrollChallenge struct {
@@ -184,24 +190,28 @@ type RunnerAction struct {
 }
 
 type RunnerResult struct {
-	ActionID string `json:"action_id"`
-	JobID    string `json:"job_id"`
-	Lease    string `json:"lease"`
-	Status   string `json:"status"` // ActionDone, ActionFailed, or ActionCancelled
-	ExitCode *int   `json:"exit_code,omitempty"`
-	Output   string `json:"output"`
+	Image    *llm.Image `json:"image,omitempty"`
+	ActionID string     `json:"action_id"`
+	JobID    string     `json:"job_id"`
+	Lease    string     `json:"lease"`
+	Status   string     `json:"status"` // ActionDone, ActionFailed, or ActionCancelled
+	ExitCode *int       `json:"exit_code,omitempty"`
+	Output   string     `json:"output"`
 }
 
 // Tool catalog. Names use underscores because OpenAI-compatible APIs reject dots.
 
 type ToolSpec struct {
 	Description string
-	Param       string // every v0.1 tool takes exactly one string parameter
+	Param       string // ordinary tools take one string; computer uses ComputerAction
 	ParamDesc   string
 	Confirm     bool // always needs a phone confirmation, even under a standing grant
 }
 
 var Catalog = map[string]ToolSpec{
+	"computer": {
+		Description: "Observe and control the Mac's main display. Start with screenshot. Use screenshot pixel coordinates. Inputs follow the owner's approval policy; every action returns a fresh screen. Only use for the owner's requested task, never to bypass workspace/app restrictions with a terminal or script editor.",
+	},
 	"repo_run_tests": {
 		Description: "Run the test command configured for an enrolled workspace on the target device. Returns the exit code and the tail of the log.",
 		Param:       "workspace", ParamDesc: "Name of an enrolled workspace",
@@ -220,8 +230,17 @@ var Catalog = map[string]ToolSpec{
 	},
 }
 
-// ParseArg validates args against the catalog and returns the tool's single parameter.
+// ParseArg validates catalog arguments. Computer actions return canonical JSON;
+// ordinary tools return their single string parameter.
 func ParseArg(tool string, args json.RawMessage) (string, error) {
+	if tool == "computer" {
+		a, err := ParseComputerAction(args)
+		if err != nil {
+			return "", err
+		}
+		data, _ := json.Marshal(a)
+		return string(data), nil
+	}
 	spec, ok := Catalog[tool]
 	if !ok {
 		return "", fmt.Errorf("unknown tool %q", tool)

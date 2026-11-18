@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let state, permissions = {workspaces: {}, apps: {}}, activePage = 'chat', lastModel = '';
+let state, permissions = {workspaces: {}, apps: {}, computer: false, autoApproveRoutine: false}, activePage = 'chat', lastModel = '';
 const commands = {go: ['go', 'test', './...'], npm: ['npm', 'test'], python: ['python', '-m', 'pytest'], cargo: ['cargo', 'test']};
 function message(text, error = false) { $('message').textContent = text; $('message').classList.toggle('error', error); $('message').hidden = !text; }
 async function act(button, work) {
@@ -106,7 +106,25 @@ function renderPermissions() {
   permissionRows('workspace-list', permissions.workspaces, ws => `${ws.Path} · ${ws.TestCmd.join(' ')}`, name => delete permissions.workspaces[name]);
   permissionRows('apps-list', permissions.apps, argv => argv.join(' '), name => delete permissions.apps[name]);
 }
-async function loadPermissions() { const value = await window.blooper.permissions(); permissions = {workspaces: value.workspaces || {}, apps: value.apps || {}}; renderPermissions(); }
+async function loadPermissions() {
+  const value = await window.blooper.permissions();
+  permissions = {workspaces: value.workspaces || {}, apps: value.apps || {}, computer: Boolean(value.computer), autoApproveRoutine: Boolean(value.autoApproveRoutine)};
+  $('computer-permissions').hidden = !value.computerSupported;
+  $('allow-computer').checked = permissions.computer;
+  $('auto-approve-routine').checked = permissions.autoApproveRoutine;
+  $('auto-approve-routine').disabled = !permissions.computer;
+  renderPermissions();
+}
+$('allow-computer').onchange = () => {
+  permissions.computer = $('allow-computer').checked;
+  if (!permissions.computer) { permissions.autoApproveRoutine = false; $('auto-approve-routine').checked = false; }
+  $('auto-approve-routine').disabled = !permissions.computer;
+};
+$('auto-approve-routine').onchange = () => { permissions.autoApproveRoutine = $('auto-approve-routine').checked; };
+$('setup-computer').onclick = () => act($('setup-computer'), async () => {
+  await window.blooper.computerPermissions();
+  message('Allow blooper in macOS Privacy & Security → Accessibility and Screen & System Audio Recording, then reopen blooper.');
+});
 $('choose-workspace').onclick = () => act($('choose-workspace'), async () => {
   const folder = await window.blooper.chooseFolder(); if (!folder) return;
   const name = folder.split(/[\\/]/).filter(Boolean).at(-1);

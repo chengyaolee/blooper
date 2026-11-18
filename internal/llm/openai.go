@@ -33,9 +33,32 @@ func NewOpenAIClient(baseURL, apiKey string) *OpenAIClient {
 // Keep provider-specific fields out of the shared Ollama request. Reasoning
 // models accept max_completion_tokens and may reject custom temperature.
 func openAIRequest(req *ChatRequest, stream bool) map[string]any {
-	body := map[string]any{"model": req.Model, "messages": req.Messages, "stream": stream, "store": false}
+	messages := make([]map[string]any, 0, len(req.Messages))
+	for _, msg := range req.Messages {
+		m := map[string]any{"role": msg.Role, "content": msg.Content}
+		if len(msg.ToolCalls) > 0 {
+			m["tool_calls"] = msg.ToolCalls
+		}
+		if msg.ToolCallID != "" {
+			m["tool_call_id"] = msg.ToolCallID
+		}
+		if len(msg.Images) > 0 {
+			parts := []any{map[string]any{"type": "text", "text": msg.Content}}
+			for _, img := range msg.Images {
+				parts = append(parts, map[string]any{"type": "image_url", "image_url": map[string]any{"url": "data:image/jpeg;base64," + img.Data, "detail": "high"}})
+			}
+			m["content"] = parts
+		}
+		messages = append(messages, m)
+	}
+	body := map[string]any{"model": req.Model, "messages": messages, "stream": stream, "store": false}
 	if len(req.Tools) > 0 {
 		body["tools"] = req.Tools
+		for _, tool := range req.Tools {
+			if tool.Function.Name == "computer" {
+				body["parallel_tool_calls"] = false
+			}
+		}
 	}
 	if req.MaxTokens > 0 {
 		body["max_completion_tokens"] = req.MaxTokens
