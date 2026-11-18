@@ -68,16 +68,17 @@ struct PairView: View {
                     } label: {
                         Label("Scan pairing code", systemImage: "qrcode.viewfinder")
                     }
-                    .disabled(!ScannerView.isAvailable)
+                    .disabled(!ScannerView.isSupported)
                 }
                 Section {
- DisclosureGroup("Advanced: self-hosted connection") {
-                    TextField("Server address", text: $server).plainInput()
-                    TextField("Pairing code", text: $code).plainInput()
-                    Button("Pair") { pair(server: server, code: code) }
-                        .disabled(server.isEmpty || code.isEmpty || busy)
-                    Text("Use a server with a trusted HTTPS certificate. Scanning the desktop app’s QR also verifies its local certificate.").font(.footnote).foregroundStyle(.secondary)
-                }
+                    DisclosureGroup("Advanced: self-hosted connection") {
+                        TextField("Server address", text: $server).plainInput()
+                        TextField("Pairing code", text: $code).plainInput()
+                        Button("Pair") { pair(server: server, code: code) }
+                            .disabled(server.isEmpty || code.isEmpty || busy)
+                        Text("Use a server with a trusted HTTPS certificate. Scanning the desktop app’s QR also verifies its local certificate.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
                 if let problem {
                     Section { Text(problem).foregroundStyle(.red) }
@@ -85,7 +86,7 @@ struct PairView: View {
             }
             .navigationTitle("Blooper Remote")
             .sheet(isPresented: $scanning) {
-                ScannerView { payload in
+                ScannerSheet { payload in
                     scanning = false
                     let items = URLComponents(string: payload)?.queryItems
                     guard let qr = URLComponents(string: payload), qr.scheme == "blooper", qr.host == "pair",
@@ -547,6 +548,7 @@ struct AddComputerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var code = ""
     @State private var pending: Enrollment?
+    @State private var scanning = false
     @State private var problem: String?
 
     var body: some View {
@@ -568,19 +570,12 @@ struct AddComputerView: View {
                 } else {
                     Section {
                         Text("On the computer, run `blooper runner`. It shows a QR code.")
-                        if ScannerView.isAvailable {
-                            ScannerView { payload in
-                                let items = URLComponents(string: payload)?.queryItems
-                                guard payload.hasPrefix("blooper://enroll"),
-                                      let scanned = items?.first(where: { $0.name == "code" })?.value
-                                else {
-                                    problem = "That isn't a Blooper enrollment code."
-                                    return
-                                }
-                                review(scanned)
-                            }
-                            .frame(height: 280)
+                        Button {
+                            scanning = true
+                        } label: {
+                            Label("Scan enrollment code", systemImage: "qrcode.viewfinder")
                         }
+                        .disabled(!ScannerView.isSupported)
                     }
                     Section("Or type the code") {
                         TextField("Enrollment code", text: $code).plainInput()
@@ -589,6 +584,17 @@ struct AddComputerView: View {
                 }
                 if let problem {
                     Section { Text(problem).foregroundStyle(.red) }
+                }
+            }
+            .sheet(isPresented: $scanning) {
+                ScannerSheet { payload in
+                    scanning = false
+                    guard let qr = URLComponents(string: payload), qr.scheme == "blooper", qr.host == "enroll",
+                          let scanned = qr.queryItems?.first(where: { $0.name == "code" })?.value else {
+                        problem = "That isn't a Blooper enrollment code."
+                        return
+                    }
+                    review(scanned)
                 }
             }
             .navigationTitle("Add computer")

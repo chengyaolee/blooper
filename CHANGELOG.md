@@ -4,6 +4,8 @@ A day-by-day log of what was committed to Blooper and what changed. Newest day f
 
 ## Unreleased
 
+- Fix iPhone QR scanning startup: request camera permission and start recognition after presentation, process updated detections, and report camera errors. Add a visible Cancel button, retry controls, and a shared scanner for pairing and enrollment.
+
 - Add macOS/Windows desktop application packaging with a bundled coordinator, local runner, tray/menu-bar access, optional login startup, and update checks/downloads. Production signing and update publication remain release steps.
 - Add OS-protected provider settings with key validation, replacement and deletion. OpenAI runs the whole agent fleet without Ollama; recall has a local text-search mode. Phones receive connection status, never provider keys.
 - Add same-Wi-Fi QR pairing with certificate pinning, a private settings listener, stable ports, local discovery, active/offline device indicators, and iPhone switching between separately paired Mac and Windows computers.

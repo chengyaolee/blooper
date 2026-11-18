@@ -133,8 +133,8 @@ Development bundles and unpublished versions cannot demonstrate a production upd
 The SwiftUI iPhone app remains under `ios/BlooperRemote`. Regenerate with `xcodegen generate`,
 then build using full Xcode, your bundle ID, and your team. The app declares local-network access
 and `_blooper._tcp` discovery. App Store signing and submission are separate release steps.
-This Mac currently has Command Line Tools rather than a full iOS SDK, so a complete iOS build
-and physical-device Wi-Fi pairing test remain required.
+Full Xcode and an installed iOS SDK are required. Camera recognition and Wi-Fi pairing must
+also be exercised on a physical iPhone.
 
 ## Checks
 
@@ -163,3 +163,15 @@ BLOOPER_LIVE_OPENAI_FLEET=1 go test ./internal/ui -run '^TestLiveChatDelegation$
 
 The existing `BLOOPER_LIVE_OLLAMA=1` check remains available for local inference. Neither check
 needs a remote runner or relay. The OpenAI check makes billable API requests.
+
+For the iPhone scanner cancellation/reopening UI check, use an available simulator from
+`xcrun simctl list devices available`:
+
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer python3 scripts/test-ios-scanner.py "SIMULATOR_UDID"
+```
+
+This creates an isolated test application and leaves your Xcode project and paired-device
+credentials untouched. The simulator checks cancellation and reopening; real camera QR
+recognition needs a physical iPhone. The scanner shows errors and offers retry or Settings
+when camera access is denied, and both pairing and enrollment have an explicit Cancel button.
