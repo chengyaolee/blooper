@@ -76,7 +76,7 @@ $('network').onchange = () => { $('pair-qr').hidden = true; $('pair-expiry').tex
 $('new-pair').onclick = () => act($('new-pair'), async () => {
   const result = await window.blooper.pair($('network').value);
   $('pair-qr').src = 'data:image/png;base64,' + result.qr; $('pair-qr').hidden = false;
-  $('pair-expiry').textContent = 'Expires in 10 minutes. Scan only in the Blooper app.';
+  $('pair-expiry').textContent = 'Expires in 10 minutes. Scan only in the blooper app.';
   clearTimeout(pairingTimer); pairingTimer = setTimeout(() => { $('pair-qr').hidden = true; $('pair-expiry').textContent = 'Code expired. Create a new pairing code.'; }, result.expires_in * 1000);
 });
 $('model-form').onsubmit = event => {
@@ -120,6 +120,6 @@ $('save-preferences').onclick = () => act($('save-preferences'), async () => { a
 $('check-updates').onclick = () => act($('check-updates'), async () => { await window.blooper.checkUpdates(); await refresh(); });
 $('install-update').onclick = () => act($('install-update'), () => window.blooper.installUpdate());
 window.blooper.onSettings(() => page('settings'));
-window.blooper.onStopped(() => { message('The local runtime stopped. Quit and reopen Blooper to reconnect.', true); $('host-status').textContent = 'Offline'; document.querySelector('.host-status .device-icon').classList.remove('connected'); });
+window.blooper.onStopped(() => { message('The local runtime stopped. Quit and reopen blooper to reconnect.', true); $('host-status').textContent = 'Offline'; document.querySelector('.host-status .device-icon').classList.remove('connected'); });
 act(null, () => refresh(true));
 setInterval(() => { refresh().catch(() => { $('host-status').textContent = 'Offline'; document.querySelector('.host-status .device-icon').classList.remove('connected'); }); }, 5000);

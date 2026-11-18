@@ -1,4 +1,4 @@
-# Blooper runner config. Copy to runner.yaml on the computer to enroll, then:
+# blooper runner config. Copy to runner.yaml on the computer to enroll, then:
 #   blooper runner -config runner.yaml
 # The planner can only name a workspace or app from this file. It never supplies a command.
 

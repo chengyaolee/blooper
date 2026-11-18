@@ -472,7 +472,7 @@ func (c *Coordinator) run(ctx context.Context, j *Job) (string, error) {
 }
 
 func plannerPrompt(d Device) string {
-	return fmt.Sprintf(`You are Blooper's remote planner. The owner spoke a request into their phone. Carry it out on the device %q (%s) using only the tools you have been given.
+	return fmt.Sprintf(`You are blooper's remote planner. The owner spoke a request into their phone. Carry it out on the device %q (%s) using only the tools you have been given.
 
 Enrolled workspaces: %s
 Allow-listed apps: %s

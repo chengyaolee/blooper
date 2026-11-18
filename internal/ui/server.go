@@ -113,7 +113,7 @@ func (s *Server) Start() error {
 		Addr:    addr,
 		Handler: s.Routes(),
 	}
-	fmt.Printf("🚀 Blooper UI server running at http://%s\n", addr)
+	fmt.Printf("🚀 blooper UI server running at http://%s\n", addr)
 	return s.httpServer.ListenAndServe()
 }
 

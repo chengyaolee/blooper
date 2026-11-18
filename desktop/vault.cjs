@@ -7,7 +7,7 @@ class Vault {
   constructor(file, safeStorage) { this.file = file; this.safeStorage = safeStorage; }
   read() {
     if (!fs.existsSync(this.file)) return {provider: 'openai', model: 'gpt-5.4-mini', launchAtLogin: false, autoUpdates: true};
-    if (!this.safeStorage.isEncryptionAvailable()) throw new Error('Unlock your system credential store, then reopen Blooper.');
+    if (!this.safeStorage.isEncryptionAvailable()) throw new Error('Unlock your system credential store, then reopen blooper.');
     return JSON.parse(this.safeStorage.decryptString(fs.readFileSync(this.file)));
   }
   write(value) {

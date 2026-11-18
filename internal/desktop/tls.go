@@ -31,7 +31,7 @@ func localCertificate(dir string) (tls.Certificate, string, error) {
 		if err != nil {
 			return tls.Certificate{}, "", err
 		}
-		tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: "Blooper local device"}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().AddDate(5, 0, 0), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}, DNSNames: []string{"localhost"}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}}
+		tpl := &x509.Certificate{SerialNumber: serial, Subject: pkix.Name{CommonName: "blooper local device"}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().AddDate(5, 0, 0), KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}, DNSNames: []string{"localhost"}, IPAddresses: []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}}
 		der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &key.PublicKey, key)
 		if err != nil {
 			return tls.Certificate{}, "", err

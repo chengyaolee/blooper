@@ -1,13 +1,13 @@
-# Blooper apps: local first
+# blooper apps: local first
 
 The desktop app hosts the coordinator, agents, chat and a local runner in one process tree.
 Install it on a Mac or Windows computer, add provider credentials in Settings, and pair an iPhone
-on the same Wi-Fi. There is no Blooper account, hosted relay, Tailscale dependency, port forwarding,
+on the same Wi-Fi. There is no blooper account, hosted relay, Tailscale dependency, port forwarding,
 or customer-managed backend in this phase.
 
 ## Everyday setup
 
-1. Open Blooper Desktop. Go to **Settings**, choose OpenAI, enter your API key and select
+1. Open blooper Desktop. Go to **Settings**, choose OpenAI, enter your API key and select
    **Validate and save**. The default model is `gpt-5.4-mini`. This works without Ollama.
    To use local inference instead, select Ollama and an installed model.
 2. Optionally connect Deepgram. Its validation sends generated silence, not recorded user audio.
@@ -33,9 +33,9 @@ If discovery is blocked, scanning a fresh desktop QR reconnects the same trusted
 Allow the desktop application through the operating system firewall on private networks.
 
 Closing the desktop window keeps its runtime running; reopen it through the menu bar/system tray.
-**Quit Blooper** stops it and its running commands. Enable **Launch Blooper when I sign in** in
+**Quit blooper** stops it and its running commands. Enable **Launch blooper when I sign in** in
 Settings for automatic startup in installed builds. It is off until explicitly enabled.
-The computer must be awake and running Blooper to execute jobs.
+The computer must be awake and running blooper to execute jobs.
 
 ## Local credentials and transport
 
@@ -65,7 +65,7 @@ recall uses local BM25 text search, with no model download or embedding API requ
 The optional Scrapling browser tool still requires its separately installed browser integration;
 chat, delegation, web search, drafting, and configured runner actions do not require it.
 
-Push delivery via a Blooper-operated APNs service is outside this LAN phase. The existing advanced
+Push delivery via a blooper-operated APNs service is outside this LAN phase. The existing advanced
 self-hosted server still supports owner-configured APNs. Public desktop installers never contain
 an APNs signing key. Relay connectivity, cross-network access and cloud execution are deferred.
 
@@ -175,3 +175,11 @@ This creates an isolated test application and leaves your Xcode project and pair
 credentials untouched. The simulator checks cancellation and reopening; real camera QR
 recognition needs a physical iPhone. The scanner shows errors and offers retry or Settings
 when camera access is denied, and both pairing and enrollment have an explicit Cancel button.
+
+## Brand assets
+
+The supplied `blooper-logo.png` is the wordmark used by desktop, web chat and iOS navigation.
+`blooper-full-icon-512.png` supplies the macOS, Windows and iOS app icons. Packaged icons
+place the artwork on white; iOS uses a 1024px version scaled from the supplied 512px source.
+The display name is **blooper**. Bundle IDs, pairing protocols and the desktop storage identity
+remain stable so existing credentials and paired devices keep working.

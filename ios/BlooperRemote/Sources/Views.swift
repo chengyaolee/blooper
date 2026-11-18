@@ -62,7 +62,7 @@ struct PairView: View {
         NavigationStack {
             Form {
                 Section {
-                    Text("Open Blooper on your Mac or Windows computer. Choose Devices, create a pairing code, then scan it here. Keep both devices on the same Wi-Fi.")
+                    Text("Open blooper on your Mac or Windows computer. Choose Devices, create a pairing code, then scan it here. Keep both devices on the same Wi-Fi.")
                     Button {
                         scanning = true
                     } label: {
@@ -84,7 +84,9 @@ struct PairView: View {
                     Section { Text(problem).foregroundStyle(.red) }
                 }
             }
-            .navigationTitle("Blooper Remote")
+            .navigationTitle("blooper")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .principal) { BrandWordmark() } }
             .sheet(isPresented: $scanning) {
                 ScannerSheet { payload in
                     scanning = false
@@ -93,11 +95,11 @@ struct PairView: View {
                           let url = items?.first(where: { $0.name == "url" })?.value,
                           let code = items?.first(where: { $0.name == "code" })?.value
                     else {
-                        problem = "That isn't a Blooper pairing code."
+                        problem = "That isn't a blooper pairing code."
                         return
                     }
                     guard let pin = items?.first(where: { $0.name == "pin" })?.value else {
-                        problem = "This code has no computer identity. Use Advanced for a self-hosted server, or create a new code in Blooper Desktop."
+                        problem = "This code has no computer identity. Use Advanced for a self-hosted server, or create a new code in blooper Desktop."
                         return
                     }
                     pair(server: url, code: code, pin: pin, computerName: items?.first(where: { $0.name == "name" })?.value)
@@ -162,7 +164,7 @@ struct HomeView: View {
                     }
                     Toggle("Transcribe with Deepgram", isOn: $useDeepgram)
                     Text(useDeepgram
-                        ? "Audio goes to your Blooper server, which forwards it to Deepgram. It is not stored."
+                        ? "Audio goes to your blooper server, which forwards it to Deepgram. It is not stored."
                         : "Audio is transcribed on this phone and never leaves it.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -214,9 +216,11 @@ struct HomeView: View {
                     }
                 }
             }
-            .navigationTitle("Blooper")
+            .navigationTitle("blooper")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: String.self) { JobView(jobID: $0) }
             .toolbar {
+                ToolbarItem(placement: .principal) { BrandWordmark() }
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink { ComputersView() } label: {
                         Label("Computers", systemImage: client.connected ? "desktopcomputer" : "wifi.slash")
@@ -591,7 +595,7 @@ struct AddComputerView: View {
                     scanning = false
                     guard let qr = URLComponents(string: payload), qr.scheme == "blooper", qr.host == "enroll",
                           let scanned = qr.queryItems?.first(where: { $0.name == "code" })?.value else {
-                        problem = "That isn't a Blooper enrollment code."
+                        problem = "That isn't a blooper enrollment code."
                         return
                     }
                     review(scanned)
@@ -659,5 +663,17 @@ struct ComputersView: View {
         }
         .navigationTitle("Computers")
         .sheet(isPresented: $pairing) { PairView() }
+    }
+}
+
+private struct BrandWordmark: View {
+    var body: some View {
+        Image("Wordmark")
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 110, height: 37)
+            .foregroundStyle(.primary)
+            .accessibilityLabel("blooper")
     }
 }

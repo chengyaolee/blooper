@@ -244,7 +244,7 @@ func (r *Runner) enroll(ctx context.Context) time.Time {
 		log.Printf("enrollment failed: %v (check the coordinator URL and this machine's clock)", err)
 		return time.Now().Add(10 * time.Second)
 	}
-	fmt.Printf("\nThis computer is not enrolled. In the Blooper Remote app, open Devices > Add computer and scan:\n\n")
+	fmt.Printf("\nThis computer is not enrolled. In the blooper Remote app, open Devices > Add computer and scan:\n\n")
 	remote.PrintQR(os.Stdout, "blooper://enroll?code="+ch.Code)
 	fmt.Printf("\nOr type the code: %s (valid until %s)\n\n", ch.Code, time.Unix(ch.ExpiresAt, 0).Format("15:04"))
 	return time.Unix(ch.ExpiresAt, 0)

@@ -1,4 +1,4 @@
-// Blooper Client-side Chat & SSE Controller
+// blooper Client-side Chat & SSE Controller
 
 let activeAgent = "agent_creator";
 let activeSessionId = "default";

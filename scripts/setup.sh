@@ -271,7 +271,7 @@ fi
 say "Done"
 echo "    Start the server (run from this directory):"
 echo "      make serve"
-echo "    It prints a pairing QR. Scan it in the Blooper Remote app."
+echo "    It prints a pairing QR. Scan it in the blooper Remote app."
 if [ "$RUNNER" = yes ] && [ -f runner.yaml ]; then
   echo
   echo "    Start the runner on this computer, in your logged-in desktop session:"

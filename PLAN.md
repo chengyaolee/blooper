@@ -1,15 +1,15 @@
-# Blooper: Autonomous Productivity Agent Fleet (Go)
+# blooper: Autonomous Productivity Agent Fleet (Go)
 
 ## Revised Vision (v3.1)
 
-Build **Blooper** — a locally-run, Go-based autonomous agent fleet for productivity tasks. A single compiled binary with minimal RAM usage (~10 MB), a chat UI (`html/template` + SSE), declarative agent configs, an Agent Creator meta-agent, and persistent searchable memory (SQLite + ragout hybrid search). Runs on local LLMs. Agents draft actions for human approval before executing.
+Build **blooper** — a locally-run, Go-based autonomous agent fleet for productivity tasks. A single compiled binary with minimal RAM usage (~10 MB), a chat UI (`html/template` + SSE), declarative agent configs, an Agent Creator meta-agent, and persistent searchable memory (SQLite + ragout hybrid search). Runs on local LLMs. Agents draft actions for human approval before executing.
 
 The system is tuned to run on two target hardware profiles:
 1. **Apple Silicon**: MacBook Pro M5 Pro (24 GB Unified Memory)
 2. **Linux Workstation**: AMD CPU, 16 GB DDR4 System RAM, NVIDIA GeForce GTX 1080 Ti (11 GB VRAM)
 
 > [!NOTE]
-> **Learning Playground Boundary**: To preserve your hands-on learning experience, Blooper's core provides a clean, working default (via Ollama API) while leaving **architectural placeholders and modular interfaces** for you to manually build your own **KV Cache Manager**, **PagedAttention engine**, or **custom vLLM/C++/CUDA inference runner**.
+> **Learning Playground Boundary**: To preserve your hands-on learning experience, blooper's core provides a clean, working default (via Ollama API) while leaving **architectural placeholders and modular interfaces** for you to manually build your own **KV Cache Manager**, **PagedAttention engine**, or **custom vLLM/C++/CUDA inference runner**.
 
 ---
 
@@ -44,7 +44,7 @@ The system is tuned to run on two target hardware profiles:
 
 ## 2. Hardware & Memory Analysis (Dual Target)
 
-Blooper's software layer is ultra-lightweight (~10 MB RAM), meaning almost 100% of your available memory budget is dedicated to the **LLM weights, KV cache, and browser automation**.
+blooper's software layer is ultra-lightweight (~10 MB RAM), meaning almost 100% of your available memory budget is dedicated to the **LLM weights, KV cache, and browser automation**.
 
 ### Target A: Apple M5 Pro (24 GB Unified Memory)
 - **Architecture**: Unified Memory Architecture (UMA) shared between CPU and GPU (~200+ GB/s bandwidth).
@@ -81,7 +81,7 @@ The GTX 1080 Ti is a classic, high-bandwidth card (484 GB/s GDDR5X), but its arc
 ├────────────────────────────────────────────────────────┤
 │  Linux OS (Headless or lightweight X11/Wayland) ~1.5 GB│
 ├────────────────────────────────────────────────────────┤
-│  Blooper Go Binary (Compiled)                   ~10 MB │
+│  blooper Go Binary (Compiled)                   ~10 MB │
 ├────────────────────────────────────────────────────────┤
 │  Chromium (Scrapling browser tool)             ~400 MB │
 ├────────────────────────────────────────────────────────┤
@@ -112,9 +112,9 @@ The GTX 1080 Ti is a classic, high-bandwidth card (484 GB/s GDDR5X), but its arc
 
 ## 3. Manual Learning Playground: Engine & KV Placeholders
 
-Because you want to implement low-level KV cache management and custom inference serving manually as a learning project, Blooper is explicitly architected with **clean abstraction boundaries**.
+Because you want to implement low-level KV cache management and custom inference serving manually as a learning project, blooper is explicitly architected with **clean abstraction boundaries**.
 
-Blooper will ship with:
+blooper will ship with:
 1. A **Default Ollama Engine** (so the fleet works immediately for all productivity tasks).
 2. Clean **Go interfaces** with documented stub implementations for your custom engine.
 3. A dedicated `experiments/custom_engine/` directory containing architecture notes, memory calculation formulas, and interface contracts.
@@ -153,7 +153,7 @@ For multi-agent systems, agents frequently share common system prompts or docume
 - **Paged Attention Buffer Pool**: Managing physical memory blocks to prevent VRAM fragmentation.
 - **Context Eviction / Sliding Window**: Evicting old turns when approaching context limits.
 
-Blooper provides this placeholder hook:
+blooper provides this placeholder hook:
 
 ```go
 // internal/llm/kv_placeholder.go
@@ -198,7 +198,7 @@ We will include a dedicated guide in the repository (`experiments/custom_engine/
 graph TD
     User([User]) --> ChatUI["Chat UI<br>(Go html/template + JS)<br>SSE streaming"]
 
-    ChatUI --> Core["Blooper Core<br>(~10 MB RAM)"]
+    ChatUI --> Core["blooper Core<br>(~10 MB RAM)"]
 
     subgraph Core_Internals["Core Internals"]
         Router[Agent Router]

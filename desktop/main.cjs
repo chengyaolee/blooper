@@ -8,13 +8,17 @@ const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { Vault } = require('./vault.cjs');
 
+// Keep the existing storage and OS encryption identity when changing the display brand.
+app.setName('Blooper');
+app.setAboutPanelOptions({ applicationName: 'blooper' });
+
 let window, tray, runtime, endpoint, vault, settings, stopping = false, updateReady = false;
 let updateStatus = 'Updates are available in installed release builds.';
 const token = randomBytes(32).toString('hex');
 const uiURL = pathToFileURL(path.join(__dirname, 'ui/index.html')).href;
 
 async function api(route, body) {
-  if (!endpoint) throw new Error('Blooper is starting. Try again shortly.');
+  if (!endpoint) throw new Error('blooper is starting. Try again shortly.');
   const response = await fetch(endpoint + route, {
     method: body === undefined ? 'GET' : 'POST',
     headers: {'Content-Type': 'application/json', 'X-Blooper-Desktop': token},
@@ -67,7 +71,7 @@ function configureUpdates() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.on('checking-for-update', () => { updateStatus = 'Checking for updates…'; });
-  autoUpdater.on('update-not-available', () => { updateStatus = 'Blooper is up to date.'; });
+  autoUpdater.on('update-not-available', () => { updateStatus = 'blooper is up to date.'; });
   autoUpdater.on('download-progress', progress => { updateStatus = `Downloading update · ${Math.round(progress.percent)}%`; });
   autoUpdater.on('update-downloaded', () => { updateReady = true; updateStatus = 'An update is ready. Restart when your jobs are finished.'; });
   autoUpdater.on('error', () => { updateStatus = 'Could not check for updates. Try again later.'; });
@@ -87,7 +91,7 @@ function deviceTrayIcon(connected = false) {
 }
 async function createWindow() {
   window = new BrowserWindow({width: 1120, height: 780, minWidth: 780, minHeight: 580,
-    title: 'Blooper', show: false, webPreferences: {preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true}});
+    title: 'blooper', icon: path.join(__dirname, 'ui/icon.png'), show: false, webPreferences: {preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true}});
   window.webContents.setWindowOpenHandler(() => ({action: 'deny'}));
   window.webContents.on('will-navigate', (event, url) => { if (url !== uiURL) event.preventDefault(); });
   window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
@@ -101,12 +105,12 @@ async function createWindow() {
   window.once('ready-to-show', () => window.show());
   await window.loadFile(path.join(__dirname, 'ui/index.html'));
   tray = new Tray(deviceTrayIcon());
-  tray.setToolTip('Blooper · Local devices');
-  tray.setContextMenu(Menu.buildFromTemplate([{label:'Open Blooper',click:()=>window.show()},{label:'Quit Blooper',click:()=>app.quit()}]));
+  tray.setToolTip('blooper · Local devices');
+  tray.setContextMenu(Menu.buildFromTemplate([{label:'Open blooper',click:()=>window.show()},{label:'Quit blooper',click:()=>app.quit()}]));
   tray.on('click',()=>window.show());
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    ...(process.platform === 'darwin' ? [{label: 'Blooper', submenu: [{role: 'about'}, {label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => { window.show(); window.webContents.send('blooper:settings'); }}, {type: 'separator'}, {label: 'Quit Blooper', accelerator: 'CmdOrCtrl+Q', click: () => app.quit()}]}] : []),
-    {label: 'File', submenu: [{label: 'Show Blooper', click: () => window.show()}, {label: 'Quit Blooper', click: () => app.quit()}]},
+    ...(process.platform === 'darwin' ? [{label: 'blooper', submenu: [{role: 'about'}, {label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: () => { window.show(); window.webContents.send('blooper:settings'); }}, {type: 'separator'}, {label: 'Quit blooper', accelerator: 'CmdOrCtrl+Q', click: () => app.quit()}]}] : []),
+    {label: 'File', submenu: [{label: 'Show blooper', click: () => window.show()}, {label: 'Quit blooper', click: () => app.quit()}]},
     {role: 'editMenu'}, {role: 'viewMenu'}
   ]));
 }
@@ -179,7 +183,7 @@ else {
       if (url) await shell.openExternal(url);
     });
     await startRuntime(); configureUpdates(); await createWindow();
-  }).catch(error => { dialog.showErrorBox('Blooper could not start', error.message); app.exit(1); });
+  }).catch(error => { dialog.showErrorBox('blooper could not start', error.message); app.exit(1); });
   app.on('activate', () => { if (window) window.show(); });
   app.on('window-all-closed', () => {}); // Keep the local runtime available to phones.
   app.on('before-quit', event => {

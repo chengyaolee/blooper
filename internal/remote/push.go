@@ -90,22 +90,22 @@ func (a *APNSClient) send(ctx context.Context, token, jobID, state string) (inva
 	if err != nil {
 		return false, err
 	}
-	title, body := "Blooper job updated", "Open Blooper to see the result."
+	title, body := "blooper job updated", "Open blooper to see the result."
 	switch state {
 	case StateApproval:
-		title, body = "Approval needed", "Open Blooper to review an action."
+		title, body = "Approval needed", "Open blooper to review an action."
 	case StateClarification:
-		title, body = "Your input is needed", "Open Blooper to choose a computer."
+		title, body = "Your input is needed", "Open blooper to choose a computer."
 	case StateSucceeded:
-		title = "Blooper job completed"
+		title = "blooper job completed"
 	case StateFailed:
-		title = "Blooper job failed"
+		title = "blooper job failed"
 	case StateCancelled:
-		title = "Blooper job cancelled"
+		title = "blooper job cancelled"
 	case StateExpired:
-		title = "Blooper job expired"
+		title = "blooper job expired"
 	case StateReconciliation:
-		title, body = "Check your computer", "An action's outcome is uncertain. Open Blooper for details."
+		title, body = "Check your computer", "An action's outcome is uncertain. Open blooper for details."
 	}
 	payload, _ := json.Marshal(map[string]any{
 		"aps":    map[string]any{"alert": map[string]string{"title": title, "body": body}, "sound": "default", "thread-id": jobID},

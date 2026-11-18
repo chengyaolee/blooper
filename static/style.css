@@ -294,3 +294,5 @@ body {
   font-weight: 700;
   border-radius: 0.5rem;
 }
+
+.brand-wordmark { display: block; width: 148px; height: auto; filter: invert(1); }

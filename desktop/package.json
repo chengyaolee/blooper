@@ -1,9 +1,9 @@
 {
   "name": "blooper-desktop",
-  "productName": "Blooper",
+  "productName": "blooper",
   "version": "0.1.0",
   "description": "Your agents and devices, connected locally",
-  "author": "Blooper contributors",
+  "author": "blooper contributors",
   "main": "main.cjs",
   "scripts": {
     "build:runtime": "node build-runtime.cjs",
@@ -45,7 +45,7 @@
       ],
       "hardenedRuntime": true,
       "extendInfo": {
-        "NSLocalNetworkUsageDescription": "Connects your paired Blooper devices on the same Wi-Fi network."
+        "NSLocalNetworkUsageDescription": "Connects your paired blooper devices on the same Wi-Fi network."
       },
       "icon": "ui/icon.icns"
     },

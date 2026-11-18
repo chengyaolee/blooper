@@ -1,4 +1,4 @@
-# Blooper Remote: the phone as a remote control
+# blooper Remote: the phone as a remote control
 
 For the installable, same-Wi-Fi desktop and iPhone setup, start with [Desktop apps](DESKTOP.md).
 The manual server and runner setup below remains available for advanced/self-hosted installations.
@@ -143,7 +143,7 @@ Tapping an alert opens that job. Approvals still require reviewing the action in
    Download the `.p8` file once; keep it outside this repository. Note its Key ID and your
    Team ID from Apple Developer membership details. A key restricted to a topic or environment
    must permit this app and the environment below.
-3. Set these variables in the environment that starts Blooper:
+3. Set these variables in the environment that starts blooper:
 
    ```sh
    export APNS_KEY_PATH="$HOME/.config/blooper/AuthKey_YOURKEYID.p8"

@@ -1,4 +1,4 @@
-// Package remote is Blooper's coordinator for phone-driven jobs: enrolled
+// Package remote is blooper's coordinator for phone-driven jobs: enrolled
 // devices, durable jobs, approvals, and the runner protocol. See docs/REMOTE.md.
 //
 // This file is the wire contract shared with internal/runner and the iOS app:

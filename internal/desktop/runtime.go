@@ -102,7 +102,7 @@ func Run(ctx context.Context, dir string) error {
 	}
 	token := os.Getenv("BLOOPER_DESKTOP_TOKEN")
 	if len(token) < 32 {
-		return fmt.Errorf("desktop must be launched by the Blooper desktop app")
+		return fmt.Errorf("desktop must be launched by the blooper desktop app")
 	}
 	cert, pin, err := localCertificate(dir)
 	if err != nil {
@@ -129,7 +129,7 @@ func Run(ctx context.Context, dir string) error {
 	if err := os.WriteFile(filepath.Join(dir, "lan.port"), []byte(strconv.Itoa(port)), 0600); err != nil {
 		return err
 	}
-	advertisement, advertiseErr := zeroconf.Register("Blooper-"+pin[:8], "_blooper._tcp", "local.", port, []string{"pin=" + pin}, nil)
+	advertisement, advertiseErr := zeroconf.Register("blooper-"+pin[:8], "_blooper._tcp", "local.", port, []string{"pin=" + pin}, nil)
 	if advertiseErr != nil {
 		log.Printf("Local discovery unavailable; QR pairing still works: %v", advertiseErr)
 	} else {

@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src http://127.0.0.1:*; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-<title>Blooper</title><link rel="stylesheet" href="app.css">
+<title>blooper</title><link rel="stylesheet" href="app.css">
 </head>
 <body>
 <aside>
-  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="5" width="26" height="19" rx="5"/><path d="M11 29h10M16 24v5M10 13h.1M22 13h.1M11 18q5 4 10 0"/></svg><strong>Blooper</strong></div>
+  <div class="brand"><img src="blooper-logo.png" alt="blooper" width="138" height="46"></div>
   <nav aria-label="Main navigation">
     <button data-page="chat" aria-current="page">Chat</button>
     <button data-page="devices">Devices <span id="device-count"></span></button>
@@ -28,16 +28,16 @@
     <header><div><h1>Your devices</h1><p>Connect your iPhone on the same Wi-Fi network.</p></div><button id="refresh-devices">Refresh</button></header>
     <div class="two-column">
       <div><h2>Paired devices</h2><div id="devices-list"></div></div>
-      <div class="pairing"><h2>Connect an iPhone</h2><p>Open Blooper on your phone and scan this code. The code verifies this computer and encrypts the connection.</p>
+      <div class="pairing"><h2>Connect an iPhone</h2><p>Open blooper on your phone and scan this code. The code verifies this computer and encrypts the connection.</p>
         <label for="network">Local network</label><select id="network"></select>
         <button id="new-pair" class="primary">Create pairing code</button>
-        <img id="pair-qr" width="280" height="280" alt="Pair this computer by scanning this QR code in Blooper on your iPhone" hidden>
-        <p id="pair-expiry" class="secondary"></p><p class="secondary">No networks listed? Connect to Wi-Fi, then refresh. Allow Blooper through your firewall on private networks.</p>
+        <img id="pair-qr" width="280" height="280" alt="Pair this computer by scanning this QR code in blooper on your iPhone" hidden>
+        <p id="pair-expiry" class="secondary"></p><p class="secondary">No networks listed? Connect to Wi-Fi, then refresh. Allow blooper through your firewall on private networks.</p>
       </div>
     </div>
   </section>
   <section id="permissions" class="page" hidden>
-    <header><div><h1>What Blooper can do</h1><p>You choose the folders and actions available to your devices.</p></div></header>
+    <header><div><h1>What blooper can do</h1><p>You choose the folders and actions available to your devices.</p></div></header>
     <h2>Workspaces</h2><p>Allow tests in selected folders. Commands run on this computer.</p>
     <div id="workspace-list"></div>
     <div class="inline"><button id="choose-workspace">Choose a folder…</button><label for="test-preset">Test command</label><select id="test-preset"><option value="go">Go tests</option><option value="npm">npm test</option><option value="python">Python · pytest</option><option value="cargo">Rust · cargo test</option></select></div>
@@ -60,9 +60,9 @@
       <p class="secondary">Validation sends one second of generated silence. Provider validation can use a small amount of API credit.</p>
     </form>
     <div class="settings-group"><h2>Application</h2>
-      <label class="check"><input type="checkbox" id="launch-at-login">Launch Blooper when I sign in</label>
+      <label class="check"><input type="checkbox" id="launch-at-login">Launch blooper when I sign in</label>
       <label class="check"><input type="checkbox" id="auto-updates" checked>Automatically check for and download updates</label>
-      <p class="secondary">Closing the window keeps Blooper running for your phone. Use Quit Blooper to stop it.</p>
+      <p class="secondary">Closing the window keeps blooper running for your phone. Use Quit blooper to stop it.</p>
       <button id="save-preferences">Save preferences</button>
       <p id="update-status" role="status"></p><div class="inline"><button id="check-updates">Check for updates</button><button id="install-update" hidden>Restart and install update</button></div>
     </div>

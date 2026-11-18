@@ -1,11 +1,11 @@
 # Custom Inference Engine — Learning Playground
 
 This directory is your space to experiment with building a custom LLM inference
-backend that integrates with Blooper's `InferenceEngine` interface.
+backend that integrates with blooper's `InferenceEngine` interface.
 
 ## Architecture
 
-Blooper uses a pluggable engine interface (`internal/llm/engine.go`). The default
+blooper uses a pluggable engine interface (`internal/llm/engine.go`). The default
 implementation talks to Ollama over HTTP. You can replace it with your own.
 
 ## Ideas to Explore

@@ -1,6 +1,6 @@
-# Blooper
+# blooper
 
-Run an agent fleet on your computer and control it from your iPhone. Blooper starts with
+Run an agent fleet on your computer and control it from your iPhone. blooper starts with
 **devices on the same Wi-Fi**, with provider keys stored locally on the computer doing the work.
 The desktop app bundles the coordinator, runner, chat, provider settings, and device pairing.
 OpenAI works throughout the fleet without Ollama; local models are optional.
@@ -12,11 +12,11 @@ Tailscale, a hosted relay, and cross-network connectivity are deferred.
 
 ## Set up the desktop app
 
-If you have a built installer, open the macOS DMG and copy Blooper to Applications, or run the
+If you have a built installer, open the macOS DMG and copy blooper to Applications, or run the
 Windows installer. Installed users do not need Go, Node.js, a terminal, or a configuration file.
 Development installers are unsigned and are intended for testing, not public distribution.
 
-1. Open **Blooper → Settings**.
+1. Open **blooper → Settings**.
 2. Select **OpenAI**, enter an API key from the [OpenAI platform](https://platform.openai.com/api-keys),
    and choose **Validate and save**. The default model is `gpt-5.4-mini`.
 3. Optionally add a [Deepgram](https://console.deepgram.com/) key for hosted voice transcription.
@@ -35,8 +35,8 @@ To use **Ollama** instead, install and start it on the computer, pull a model su
 `qwen2.5:3b`, then select **Ollama** and that model in Settings. Conversation recall uses local
 text search and does not require an embedding model.
 
-Closing the window keeps Blooper running in the menu bar/system tray. Use **Quit Blooper** to
-stop it. Enable **Launch Blooper when I sign in** for automatic startup in installed builds.
+Closing the window keeps blooper running in the menu bar/system tray. Use **Quit blooper** to
+stop it. Enable **Launch blooper when I sign in** for automatic startup in installed builds.
 Update settings can automatically check for and download published releases; the app offers a
 restart to install an update after active jobs finish. Production updates require signed releases.
 
@@ -94,7 +94,7 @@ open BlooperRemote.xcodeproj
    profile that supports Push Notifications; see [APNs setup](docs/REMOTE.md#push-notifications).
 2. Build and run on your iPhone. Allow camera access when scanning and local-network access
    when connecting.
-3. Keep the phone and computer on the **same Wi-Fi**. Open Blooper on the phone, choose
+3. Keep the phone and computer on the **same Wi-Fi**. Open blooper on the phone, choose
    **Scan pairing code**, and scan the desktop's QR code.
 4. The QR verifies the computer's TLS certificate. Requests are encrypted and signed; the phone
    stores the trusted computer identity in its device-only Keychain.
@@ -103,7 +103,7 @@ open BlooperRemote.xcodeproj
 
 A green device icon with **Connected** indicates recent contact. An offline icon with **Offline**
 indicates missing contact. A backgrounded phone can appear offline because its heartbeat stops.
-The desktop must be awake and running Blooper to execute work.
+The desktop must be awake and running blooper to execute work.
 
 Previously paired devices use Bonjour/mDNS to rediscover their computer. If pairing fails,
 check local-network permission and the desktop firewall's private-network access. Guest Wi-Fi
@@ -113,7 +113,7 @@ create and scan a fresh QR code. See [local connectivity details](docs/DESKTOP.m
 ## Advanced: command-line and self-hosted setup
 
 The CLI remains available for separate coordinators and runners. From the repository root,
-set the provider key in the shell that starts Blooper:
+set the provider key in the shell that starts blooper:
 
 ```sh
 # macOS/Linux shell
@@ -152,7 +152,7 @@ itself; advanced self-hosted installations manage their own transport. The iPhon
 connection section supports manual server addresses with publicly trusted TLS certificates.
 See [remote coordinator, runner, TLS, and APNs instructions](docs/REMOTE.md).
 
-Push delivery through a Blooper-operated notification service is outside this local-first phase.
+Push delivery through a blooper-operated notification service is outside this local-first phase.
 The advanced self-hosted server supports owner-configured APNs. Customers do not need an APNs
 signing key for local desktop operation, and public desktop installers must never contain one.
 
@@ -169,7 +169,7 @@ python3 -m venv ~/.venvs/scrapling
 export SCRAPLING_MCP_BIN=~/.venvs/scrapling/bin/scrapling-mcp
 ```
 
-Launch Blooper with that environment, or put `scrapling-mcp` on its PATH. For GUI launches,
+Launch blooper with that environment, or put `scrapling-mcp` on its PATH. For GUI launches,
 ensure the desktop process can find the integration. Headless Linux installations may also
 need Xvfb. A missing browser integration returns an installation hint.
 

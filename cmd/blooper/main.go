@@ -300,7 +300,7 @@ func loopbackOnly(h http.Handler) http.Handler {
 }
 
 func printPairing(publicURL, code string) {
-	fmt.Printf("\nPair your phone: open Blooper Remote and scan this code.\n\n")
+	fmt.Printf("\nPair your phone: open blooper Remote and scan this code.\n\n")
 	remote.PrintQR(os.Stdout, "blooper://pair?url="+url.QueryEscape(publicURL)+"&code="+code)
 	fmt.Printf("\nOr enter the server %s and the code %s (valid for 10 minutes, single use).\n\n", publicURL, code)
 }

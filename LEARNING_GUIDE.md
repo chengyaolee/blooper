@@ -1,6 +1,6 @@
-# Blooper: The Step-by-Step Hands-On Engineering Workbook
+# blooper: The Step-by-Step Hands-On Engineering Workbook
 
-Welcome! This workbook is designed specifically to help you build and understand the advanced parts of Blooper **step-by-step**. 
+Welcome! This workbook is designed specifically to help you build and understand the advanced parts of blooper **step-by-step**.
 
 Every milestone is broken down into **numbered micro-tasks**. You will never have to guess which file to touch, what lines of code to write, or why you are writing them.
 
@@ -22,7 +22,7 @@ Track your progress by checking off tasks as you finish them:
   - [ ] [Task 2.3: Build an LRU Eviction Policy](#task-23-build-an-lru-eviction-policy)
 - [ ] **Track 3: Model Context Protocol (MCP) Client**
   - [ ] [Task 3.1: Build the Subprocess JSON-RPC Transport](#task-31-build-the-subprocess-json-rpc-transport)
-  - [ ] [Task 3.2: Implement the Tool Adapter for Blooper](#task-32-implement-the-tool-adapter-for-blooper)
+  - [ ] [Task 3.2: Implement the Tool Adapter for blooper](#task-32-implement-the-tool-adapter-for-blooper)
   - [ ] [Task 3.3: Write an End-to-End Test with a Mock MCP Server](#task-33-write-an-end-to-end-test-with-a-mock-mcp-server)
   - [ ] [Task 3.4: Connect External Community MCP Servers](#task-34-connect-external-community-mcp-servers)
 - [ ] **Track 4: Hybrid Search Memory (BM25 + Local Vector Embeddings)**
@@ -47,7 +47,7 @@ go version
   * **Expected Output**: `/Applications/Google Chrome.app`
 * **On Linux**: Run `google-chrome --version` or `which chromium`
 
-#### Check 3: Verify Blooper Current Tests Pass
+#### Check 3: Verify blooper Current Tests Pass
 ```bash
 cd /Users/chengyao/Documents/GitHub/blooper
 go test ./...
@@ -66,7 +66,7 @@ curl http://localhost:11434/api/tags
 
 Websites protect themselves against scrapers and AI agents using anti-bot services like **Cloudflare Turnstile, DataDome, and Akamai**. These services run JavaScript tests in the background to detect whether a browser is operated by a human or automation software.
 
-In this track, you will turn Blooper's browser from an **easily detected bot** into an **undetectable, human-like browser**.
+In this track, you will turn blooper's browser from an **easily detected bot** into an **undetectable, human-like browser**.
 
 ---
 
@@ -138,7 +138,7 @@ func TestBrowserDetection(t *testing.T) {
 #### Line-by-Line Explanation:
 * **Line 10 (`NewBrowserTool(true)`)**: Calls our constructor in `browser.go`. `true` means headless (no visible window).
 * **Line 11 (`defer tool.Close()`)**: Important! If you omit this, Chrome stays alive in background memory (~400MB leak).
-* **Line 14–17 (`json.Marshal(...)`)**: Blooper's tools receive arguments as JSON from the LLM. We mimic that here.
+* **Line 14–17 (`json.Marshal(...)`)**: blooper's tools receive arguments as JSON from the LLM. We mimic that here.
 * **Line 21 (`context.WithTimeout(...)`)**: Prevents the test from hanging forever if Wi-Fi drops.
 * **Line 26 (`tool.Execute(...)`)**: The heart of the tool. It launches Chrome, loads the page, takes a screenshot, and saves it into `data/screenshots/`.
 
@@ -183,7 +183,7 @@ Look at the table in the screenshot:
 ## Task 1.2: Upgrade to Chrome's New Headless Engine
 
 ### The Goal
-In 2023, Google introduced `--headless=new`. 
+In 2023, Google introduced `--headless=new`.
 * **Old Headless**: A stripped-down, separate C++ engine. Easily fingerprinted by websites because text fonts, WebGL, and CSS behave differently than real Chrome.
 * **New Headless (`--headless=new`)**: The exact full Chrome desktop browser, rendered into an off-screen memory buffer.
 
@@ -701,13 +701,13 @@ You now have a working, thread-safe KV cache slot manager!
 
 # Track 3: Model Context Protocol (MCP) Client
 
-The **Model Context Protocol (MCP)** is an open standard designed to let AI agents interact with external tools and databases through a standardized protocol. Instead of hardcoding specialized Go tools for Google Calendar, Slack, GitHub, Postgres, and Email, an external program runs as an **MCP Server**, and Blooper connects to it as an **MCP Client**.
+The **Model Context Protocol (MCP)** is an open standard designed to let AI agents interact with external tools and databases through a standardized protocol. Instead of hardcoding specialized Go tools for Google Calendar, Slack, GitHub, Postgres, and Email, an external program runs as an **MCP Server**, and blooper connects to it as an **MCP Client**.
 
 ```
                        MCP ARCHITECTURE IN BLOOPER
-                       
+
    ┌─────────────────────────────────────────────────────────────┐
-   │                       Blooper Core                          │
+   │                       blooper Core                          │
    │                                                             │
    │  llm.InferenceEngine ──► Model outputs tool call:           │
    │                          read_emails({"unread_only": true}) │
@@ -717,7 +717,7 @@ The **Model Context Protocol (MCP)** is an open standard designed to let AI agen
    ┌─────────────────────────────────────────────────────────────┐
    │            internal/tools/mcp_adapter.go                    │
    │                                                             │
-   │  Translates Blooper Tool.Execute() into JSON-RPC 2.0:       │
+   │  Translates blooper Tool.Execute() into JSON-RPC 2.0:       │
    │  {"jsonrpc":"2.0","method":"tools/call","params":{...}}    │
    └─────────────────────────────────────────────────────────────┘
                                   │ (stdin/stdout pipe)
@@ -954,10 +954,10 @@ func (c *MCPClient) Close() error {
 
 ---
 
-## Task 3.2: Implement the Tool Adapter for Blooper
+## Task 3.2: Implement the Tool Adapter for blooper
 
 ### The Goal
-Blooper's agents execute tools that conform to the `tools.Tool` interface in [internal/tools/tool.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/tool.go). We will build an adapter in `internal/tools/mcp_adapter.go` that translates an MCP tool definition into this interface so any Blooper agent can call it like a native tool.
+blooper's agents execute tools that conform to the `tools.Tool` interface in [internal/tools/tool.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/tool.go). We will build an adapter in `internal/tools/mcp_adapter.go` that translates an MCP tool definition into this interface so any blooper agent can call it like a native tool.
 
 ---
 
@@ -986,7 +986,7 @@ import (
 	"github.com/chengyaolee/blooper/internal/llm"
 )
 
-// MCPToolAdapter wraps an MCP server tool into Blooper's standard Tool interface.
+// MCPToolAdapter wraps an MCP server tool into blooper's standard Tool interface.
 type MCPToolAdapter struct {
 	client   *MCPClient
 	name     string
@@ -1135,10 +1135,10 @@ func TestMCPClientHandshakeAndToolCall(t *testing.T) {
 	}
 	t.Log("✅ MCP Handshake completed successfully!")
 
-	// 2. Wrap into Blooper Tool Adapter
+	// 2. Wrap into blooper Tool Adapter
 	adapter := NewMCPToolAdapter(client, "mock_echo", "A mock tool", map[string]interface{}{}, false)
 
-	// 3. Execute through Blooper's standard interface
+	// 3. Execute through blooper's standard interface
 	res, err := adapter.Execute(ctx, json.RawMessage(`{"input":"hello"}`))
 	if err != nil {
 		t.Fatalf("Tool execution failed: %v", err)
@@ -1191,7 +1191,7 @@ mcp_servers:
       - write_query
 ```
 
-At startup in `cmd/blooper/main.go`, Blooper launches each configured server:
+At startup in `cmd/blooper/main.go`, blooper launches each configured server:
 ```go
 for _, srv := range cfg.MCPServers {
     client, err := tools.NewMCPClient(srv.Command, srv.Args...)
@@ -1210,7 +1210,7 @@ for _, srv := range cfg.MCPServers {
 
 # Track 4: Hybrid Search Memory (BM25 + Local Vector Embeddings)
 
-Blooper currently uses SQLite FTS5 (BM25 keyword search) for memory. Here, you will add **dense vector semantic search** using `nomic-embed-text` locally via Ollama, and merge keyword and vector results using **Reciprocal Rank Fusion (RRF)**.
+blooper currently uses SQLite FTS5 (BM25 keyword search) for memory. Here, you will add **dense vector semantic search** using `nomic-embed-text` locally via Ollama, and merge keyword and vector results using **Reciprocal Rank Fusion (RRF)**.
 
 ---
 
@@ -1452,7 +1452,7 @@ go test -v -run "TestCosineSimilarity|TestRRF" ./internal/memory
 
 ## What to do next?
 
-Start right now with **[Task 1.1](#task-11-capture-your-baseline-bot-failure-screenshot)**! 
+Start right now with **[Task 1.1](#task-11-capture-your-baseline-bot-failure-screenshot)**!
 1. Create `internal/tools/browser_test.go`
 2. Run `go test -v -run TestBrowserDetection ./internal/tools`
 3. Check `data/screenshots/`

@@ -1,8 +1,10 @@
 # Changelog
 
-A day-by-day log of what was committed to Blooper and what changed. Newest day first; within a day, commits are listed oldest first. Each entry is `short-hash` followed by the commit subject, then a summary of the change.
+A day-by-day log of what was committed to blooper and what changed. Newest day first; within a day, commits are listed oldest first. Each entry is `short-hash` followed by the commit subject, then a summary of the change.
 
 ## Unreleased
+
+- Adopt the supplied blooper wordmark and app artwork for the desktop, web chat and iPhone apps; use lowercase product labels and preserve the desktop credential-storage identity.
 
 - Fix iPhone QR scanning startup: request camera permission and start recognition after presentation, process updated detections, and report camera errors. Add a visible Cancel button, retry controls, and a shared scanner for pairing and enrollment.
 
@@ -65,7 +67,7 @@ A day-by-day log of what was committed to Blooper and what changed. Newest day f
 
 ## 2026-09-21
 
-- `32d2a5e` **Add initial project structure for Blooper**
+- `32d2a5e` **Add initial project structure for blooper**
   - Go module setup, `.gitignore`, `Makefile`, `PLAN.md`, and `LEARNING_GUIDE.md`.
   - Agent configs: `agents/{agent_creator,email_drafter,web_researcher}.yaml`. Runtime config: `config/{blooper,hardware}.yaml`.
   - `internal/agent`: agent loop, config loading, creator, registry, and a file watcher, with tests.
