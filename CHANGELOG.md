@@ -2,6 +2,20 @@
 
 A day-by-day log of what was committed to Blooper and what changed. Newest day first; within a day, commits are listed oldest first. Each entry is `short-hash` followed by the commit subject, then a summary of the change.
 
+## Unreleased
+
+- Add macOS/Windows desktop application packaging with a bundled coordinator, local runner, tray/menu-bar access, optional login startup, and update checks/downloads. Production signing and update publication remain release steps.
+- Add OS-protected provider settings with key validation, replacement and deletion. OpenAI runs the whole agent fleet without Ollama; recall has a local text-search mode. Phones receive connection status, never provider keys.
+- Add same-Wi-Fi QR pairing with certificate pinning, a private settings listener, stable ports, local discovery, active/offline device indicators, and iPhone switching between separately paired Mac and Windows computers.
+- Add desktop runtime/security integration checks, native shell smoke checks and a real TLS-pinning check for the shared iOS client. Defer Tailscale and hosted relay connectivity.
+
+- Enforce per-agent tool allowlists and validate configured approval tools. Web Researcher explicitly has `delegate`; remove approval names for tools that do not exist.
+- Pause chat and delegated calls for single-use approval decisions, preserving caller and cancellation context. Fix fragmented SSE parsing so approval cards survive network chunk boundaries.
+- Use the installed `qwen2.5:3b` for shipped agents and the local planner; validate startup model availability and configured fallbacks.
+- Replace the hosted DeepSeek adapter with OpenAI Chat Completions (`gpt-5.4-mini` by default), including provider-compatible token limits and opt-in live checks for OpenAI and Deepgram.
+- Add optional APNs alerts for completed jobs and jobs needing input, signed token registration/removal, persistent token storage, invalid-token cleanup, and iOS job navigation from notifications. Document Apple signing and credential setup.
+- Verified a real Ollama chat delegation chain, OpenAI `gpt-5.4-mini` tool calls and streaming, and Deepgram `nova-3` transcription. Validated the local APNs key as P-256 and the configured bundle ID/environment; real APNs delivery and iOS build/device testing remain manual.
+
 ## 2026-10-21
 
 - `7745822` **Replace FTS5 conversation recall with ragout hybrid search**

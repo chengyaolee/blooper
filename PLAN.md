@@ -2,7 +2,7 @@
 
 ## Revised Vision (v3.1)
 
-Build **Blooper** — a locally-run, Go-based autonomous agent fleet for productivity tasks. A single compiled binary with minimal RAM usage (~10 MB), a chat UI (HTMX + Templ + SSE), declarative agent configs, an Agent Creator meta-agent, and persistent searchable memory (SQLite + FTS5). Runs on local LLMs. Agents draft actions for human approval before executing.
+Build **Blooper** — a locally-run, Go-based autonomous agent fleet for productivity tasks. A single compiled binary with minimal RAM usage (~10 MB), a chat UI (`html/template` + SSE), declarative agent configs, an Agent Creator meta-agent, and persistent searchable memory (SQLite + ragout hybrid search). Runs on local LLMs. Agents draft actions for human approval before executing.
 
 The system is tuned to run on two target hardware profiles:
 1. **Apple Silicon**: MacBook Pro M5 Pro (24 GB Unified Memory)
@@ -29,11 +29,11 @@ The system is tuned to run on two target hardware profiles:
 
 | Capability | Go Library | Maturity |
 | :--- | :--- | :--- |
-| Ollama client + tool calling | `github.com/ollama/ollama/api` or direct HTTP | ✅ Production-ready |
+| Ollama client + tool calling | Direct HTTP (no Ollama module) | ✅ In use |
 | MCP (Model Context Protocol) | `github.com/modelcontextprotocol/go-sdk` (official) | ✅ Official SDK |
-| Browser automation | `github.com/go-rod/rod` (Puppeteer-like) | ✅ Battle-tested |
-| Chat UI (SSE streaming) | `net/http` + HTMX + Templ | ✅ Excellent fit |
-| SQLite + FTS5 + Vector search | `modernc.org/sqlite` (pure Go, no CGo) | ✅ Production-ready |
+| Browser automation | Scrapling MCP server (`scrapling-mcp`, Python, stdio). Replaces go-rod. | ✅ In use |
+| Chat UI (SSE streaming) | `net/http` + `html/template` + `static/app.js`. HTMX and Templ dropped. | ✅ In use |
+| SQLite + hybrid search | `modernc.org/sqlite` (pure Go, no CGo) for storage; `github.com/chengyaolee/ragout` (BM25 + vectors, RRF) for search. Replaces FTS5. | ✅ In use |
 | YAML config parsing | `gopkg.in/yaml.v3` | ✅ Standard |
 | WebSocket (optional) | `github.com/gorilla/websocket` | ✅ Industry standard |
 
@@ -83,7 +83,7 @@ The GTX 1080 Ti is a classic, high-bandwidth card (484 GB/s GDDR5X), but its arc
 ├────────────────────────────────────────────────────────┤
 │  Blooper Go Binary (Compiled)                   ~10 MB │
 ├────────────────────────────────────────────────────────┤
-│  Chromium (Rod Browser Automation)             ~400 MB │
+│  Chromium (Scrapling browser tool)             ~400 MB │
 ├────────────────────────────────────────────────────────┤
 │  Ollama / Inference Host Process               ~500 MB │
 ├────────────────────────────────────────────────────────┤
@@ -134,10 +134,10 @@ import (
 type InferenceEngine interface {
     // Generate sends a prompt and returns tool calls or text response
     Generate(ctx context.Context, req *ChatRequest) (*ChatResponse, error)
-    
+
     // Stream streams tokens back to the UI via Server-Sent Events (SSE)
     Stream(ctx context.Context, req *ChatRequest, out chan<- StreamChunk) error
-    
+
     // KVStats returns metrics from the KV cache (used for UI metrics & debugging)
     KVStats() (*KVMetrics, error)
 }
@@ -166,10 +166,10 @@ import "context"
 type KVManager interface {
     // AllocateSlot reserves a KV cache context block for an agent session
     AllocateSlot(ctx context.Context, sessionID string, expectedTokens int) (slotID int, err error)
-    
+
     // EvictLRU frees least-recently-used KV blocks when VRAM pressure is high
     EvictLRU(ctx context.Context) error
-    
+
     // SharePrefix links a common system prompt KV block to multiple agent sessions
     SharePrefix(ctx context.Context, prefixHash string, targetSlotID int) error
 }
@@ -196,29 +196,29 @@ We will include a dedicated guide in the repository (`experiments/custom_engine/
 
 ```mermaid
 graph TD
-    User([User]) --> ChatUI["Chat UI<br>(Go + HTMX + Templ)<br>SSE streaming"]
-    
+    User([User]) --> ChatUI["Chat UI<br>(Go html/template + JS)<br>SSE streaming"]
+
     ChatUI --> Core["Blooper Core<br>(~10 MB RAM)"]
-    
+
     subgraph Core_Internals["Core Internals"]
         Router[Agent Router]
         Scheduler[Task Scheduler<br>goroutine pool]
         Approval[Approval Queue<br>draft → review → execute]
     end
-    
+
     Core --> Router
     Router --> Scheduler
     Scheduler --> Approval
-    
+
     subgraph Agent_System["Agent System"]
         Registry["Agent Registry<br>(loads YAML configs)"]
         Creator["🤖 Agent Creator<br>(built-in meta-agent)"]
         Creator -->|"generates"| YAMLFiles["agents/*.yaml"]
         YAMLFiles --> Registry
     end
-    
+
     Router --> Registry
-    
+
     subgraph Inference_Layer["Inference Layer (Pluggable)"]
         EngineSelect{"Engine Router"}
         OllamaEngine["Default Engine: Ollama Client<br>(HTTP localhost:11434)"]
@@ -227,22 +227,22 @@ graph TD
         EngineSelect --> OllamaEngine
         EngineSelect -.->|"User implementation"| CustomEngine
     end
-    
+
     Registry --> EngineSelect
-    
+
     subgraph Tools["Tool Layer"]
-        Rod["🌐 Rod<br>Browser automation"]
+        Scrapling["🌐 Scrapling MCP<br>Browser automation"]
         Search["🔍 Web Search<br>DuckDuckGo API"]
         Files["📄 File I/O"]
         MCP_Client["🔌 MCP Client<br>(email, calendar, etc.)"]
     end
-    
+
     Inference_Layer --> Tools
-    
+
     subgraph Memory["Persistent Memory"]
-        SQLite["SQLite + FTS5<br>Conversation summaries<br>Searchable history (~0 MB idle)"]
+        SQLite["SQLite + ragout<br>Conversation records<br>Hybrid search index (BM25 + vectors)"]
     end
-    
+
     Core --> SQLite
 ```
 
@@ -250,8 +250,8 @@ graph TD
 
 ## 5. Component Deep Dive
 
-### 5.1 Chat UI (Go + HTMX + Templ + SSE)
-- **Zero-Node / Zero-React**: Server-rendered HTML with HTMX.
+### 5.1 Chat UI (Go + html/template + SSE)
+- **Zero-Node / Zero-React**: Server-rendered HTML with Go `html/template`, plus a small hand-written `static/app.js`. HTMX and Templ were dropped.
 - **SSE Streaming**: As the LLM generates tokens, Go flushes chunks directly to the chat bubble via `http.Flusher`.
 - **Approval Cards**: Sensitive actions (e.g. sending an email, submitting a web form) render an interactive card with `[Approve]`, `[Edit]`, `[Reject]` buttons.
 
@@ -270,13 +270,15 @@ A built-in agent that acts as your systems architect. You talk to it in the Chat
 2. Generates a clean, validated `agents/<name>.yaml` file.
 3. Automatically registers the new agent in the running fleet without restarting the server.
 
-### 5.4 Persistent Memory (SQLite + FTS5)
-- Summaries of conversations are automatically indexed into an on-disk SQLite database.
-- Agents have access to a `recall("query")` tool that performs full-text BM25 search over past conversations using SQLite FTS5.
+### 5.4 Persistent Memory (SQLite + ragout)
+- Conversations are saved to an on-disk SQLite database, which remains the record store.
+- ragout indexes them and owns search, with snapshots stored next to the database (`<db>.vec`, `<db>.bm25`). Existing conversations are indexed on first open.
+- Agents have access to a `recall("query")` tool that performs hybrid search over past conversations: BM25 plus local vector embeddings (Ollama `nomic-embed-text`), fused with RRF. Replaces the original FTS5 plan.
+- Hierarchical memory (not in the original plan): an orchestrator (`internal/memory/context.go`) builds layered prompts, stores large tool output as artifacts, and compacts old steps. Persistent user rules (`internal/memory/rules.go`, `MEMORY.md`) are saved only from user-typed text.
 - Zero RAM overhead when not actively querying.
 
 ### 5.5 Tool Layer & Delegation
-- **Rod Browser Automation**: Headless browser control (navigate, extract text, click, screenshot).
+- **Browser Automation (Scrapling MCP)**: Chrome driven through Scrapling's MCP server over stdio, with stealth fingerprints and one session kept open across calls. Supports navigate, extract text, click, fill, and screenshot. Replaces go-rod. On headless Linux without a display, it runs on Xvfb when available.
 - **Web Search**: DuckDuckGo API for quick fact-finding without full browser overhead.
 - **MCP Client**: Standardized interface for email and calendar integrations using the official Go MCP SDK.
 - **Delegation Protocol**: Agents can invoke other specialized agents as sub-routines via Goroutines.
@@ -299,7 +301,8 @@ blooper/
 │   │   ├── agent.go                 # Agent struct, Run() loop
 │   │   ├── registry.go              # Loads YAML configs, manages agent catalog
 │   │   ├── config.go                # AgentConfig struct (parsed from YAML)
-│   │   └── creator.go              # Agent Creator meta-agent logic
+│   │   ├── creator.go               # Agent Creator meta-agent logic
+│   │   └── watcher.go               # fsnotify watcher for hot-reloading agent YAMLs
 │   │
 │   ├── core/
 │   │   ├── router.go                # Routes user messages to agents
@@ -311,18 +314,21 @@ blooper/
 │   │   ├── engine.go                # InferenceEngine interface
 │   │   ├── ollama.go                # Default Ollama HTTP client implementation
 │   │   ├── kv_placeholder.go        # [PLACEHOLDER] KV Cache manager interface & stubs
+│   │   ├── kv_allocator.go          # KVSlot + SlotManager: slot allocation, eviction, stats
 │   │   ├── models.go                # Model registry & hardware-tuned defaults
 │   │   └── streaming.go             # SSE token streaming to UI
 │   │
 │   ├── memory/
 │   │   ├── store.go                 # SQLite connection, schema migration
 │   │   ├── summarizer.go            # LLM-based conversation summarization
-│   │   └── recall.go                # FTS5 search over past conversations
+│   │   ├── context.go               # Orchestrator: layered prompts, artifacts, compaction
+│   │   ├── rules.go                 # Persistent user rules (MEMORY.md)
+│   │   └── recall.go                # Hybrid search over past conversations (ragout)
 │   │
 │   ├── tools/
 │   │   ├── tool.go                  # Tool interface definition
 │   │   ├── registry.go              # Tool registry
-│   │   ├── browser.go               # Rod browser automation
+│   │   ├── browser.go               # Browser tool, Scrapling MCP over stdio (replaces Rod)
 │   │   ├── search.go                # DuckDuckGo web search
 │   │   ├── files.go                 # File read/write
 │   │   ├── delegate.go              # Delegation tool
@@ -333,12 +339,7 @@ blooper/
 │       ├── server.go                # HTTP handlers, SSE endpoints
 │       ├── routes.go                # Route definitions
 │       └── templates/
-│           ├── layout.templ         # Base layout
-│           ├── chat.templ           # Chat interface
-│           ├── message.templ        # Chat message bubble
-│           ├── approval.templ       # Approval card component
-│           ├── agents.templ         # Agent list/management page
-│           └── settings.templ       # Settings page (model selector)
+│           └── index.html           # Single page: chat, agents, approvals (html/template)
 │
 ├── experiments/                     # [LEARNING PLAYGROUND]
 │   └── custom_engine/
@@ -361,11 +362,10 @@ blooper/
 │   └── blooper.db                   # SQLite database (conversations, memory)
 │
 ├── static/                          # Static assets
-│   ├── htmx.min.js
-│   ├── sse.js                       # HTMX SSE extension
+│   ├── app.js                       # Chat, approvals, and SSE client (no HTMX)
 │   └── style.css
 │
-└── Makefile                         # Build, run, test, and templ generate targets
+└── Makefile                         # Build, run, test, and cross-compile targets
 ```
 
 ---
@@ -373,33 +373,46 @@ blooper/
 ## 7. Phased Roadmap
 
 ### Phase 1: Agent Creator + Chat UI Skeleton + Engine Stubs (Weeks 1–2)
-- [ ] Go project scaffolding (`go.mod`, directory structure)
-- [ ] Pluggable `InferenceEngine` interface + default Ollama client
-- [ ] KV cache manager placeholder stubs (`internal/llm/kv_placeholder.go`)
-- [ ] Agent config schema and YAML parser (`internal/agent/config.go`)
-- [ ] Agent registry that loads from `agents/` directory (`internal/agent/registry.go`)
-- [ ] Agent Creator with `create_agent_config` tool (`internal/agent/creator.go`)
-- [ ] Chat UI with SSE streaming (`internal/ui/` via Templ + HTMX)
-- [ ] Approval card component (`draft → approve/edit/reject`)
-- [ ] Settings page with model & hardware profile switcher (M5 Pro vs Linux 1080 Ti presets)
+- [x] Go project scaffolding (`go.mod`, directory structure)
+- [x] Pluggable `InferenceEngine` interface + default Ollama client (direct HTTP)
+- [x] KV cache manager placeholder stubs (`internal/llm/kv_placeholder.go`) + `SlotManager` (`kv_allocator.go`)
+- [x] Agent config schema and YAML parser (`internal/agent/config.go`)
+- [x] Agent registry that loads from `agents/` directory (`internal/agent/registry.go`)
+- [x] Agent Creator with `create_agent_config` tool (`internal/agent/creator.go`)
+- [x] Chat UI with SSE streaming (`internal/ui/` via `html/template` + `static/app.js`; Templ and HTMX dropped)
+- [x] Approval card component: approve/reject. The Edit button is not built.
+- [ ] Settings page with model & hardware profile switcher (M5 Pro vs Linux 1080 Ti presets). `config/hardware.yaml` exists, but nothing switches models from it yet.
+- [x] Entry point (`cmd/blooper/main.go`)
 
 ### Phase 2: Core Loop + Browser + Memory (Weeks 3–5)
-- [ ] Rod browser integration (`internal/tools/browser.go`) with DOM simplification
-- [ ] DuckDuckGo search tool (`internal/tools/search.go`)
-- [ ] Agent-to-agent delegation (`internal/core/delegation.go`)
-- [ ] SQLite + FTS5 persistent memory (`internal/memory/`) with `recall` tool
-- [ ] Task scheduler with goroutine pool
+- [x] Browser tool via Scrapling MCP (`internal/tools/browser.go`). Replaces the Rod integration. DOM simplification was not verified.
+- [x] DuckDuckGo search tool (`internal/tools/search.go`)
+- [x] Agent-to-agent delegation (`internal/core/delegation.go`)
+- [x] Persistent memory (`internal/memory/`) with `recall` tool. Hybrid search via ragout replaces SQLite FTS5.
+- [x] Task scheduler with goroutine pool
 
 ### Phase 3: MCP Integration + Email/Calendar (Weeks 6–8)
-- [ ] MCP client implementation using official Go SDK (`internal/tools/mcp.go`)
+- [ ] MCP client implementation using official Go SDK (`internal/tools/mcp.go`). The go-sdk is a dependency, but only the browser tool uses MCP so far, and there is no generic client.
 - [ ] Email MCP server (IMAP/SMTP)
 - [ ] Calendar MCP server
-- [ ] Hot-reload for agent YAMLs
+- [x] Hot-reload for agent YAMLs (`internal/agent/watcher.go`)
 
 ### Phase 4: Polish + Linux Cross-Compilation & Experiments (Weeks 9–10)
-- [ ] `Makefile` targets for native build and Linux cross-compilation (`GOOS=linux GOARCH=amd64`)
+- [x] `Makefile` targets for native build and Linux cross-compilation (`GOOS=linux GOARCH=amd64`). Both build now that the entry point exists.
 - [ ] Systemd service file for Linux workstation deployment
 - [ ] `experiments/custom_engine/` documentation and integration tests for your custom engine experiments
+
+### Phase 5: Phone remote control (see `docs/REMOTE.md`)
+- [x] Entry point with subcommands (`cmd/blooper/main.go`: `serve`, `runner`, `pair`, `devices`, `revoke`)
+- [x] Coordinator: signed device requests, QR enrollment, durable jobs, leases, approvals (`internal/remote/`)
+- [x] Desktop runner with `repo_run_tests`, `app_open`, `web_search` (`internal/runner/`)
+- [x] OpenAI engine for the planner (`internal/llm/openai.go`); Ollama fallback
+- [x] Deepgram transcription through the coordinator; on-device speech on the phone
+- [x] iOS app source (`ios/BlooperRemote/`). Not yet compiled or run on a device.
+- [ ] Push notifications (APNs)
+- [ ] Hands-free entry (Siri / App Shortcut)
+- [ ] Cloud workspace provisioning; direct Tailscale path
+- [ ] Lock-screen and GUI-readiness checks; reconciliation flow
 
 ---
 
@@ -412,20 +425,21 @@ go 1.23
 
 require (
     // LLM & API
-    github.com/ollama/ollama               v0.x.x
-    
-    // UI & Web
-    github.com/a-h/templ                   v0.x.x  // Type-safe Go templates
-    
-    // Browser
-    github.com/go-rod/rod                  v0.x.x  // Chrome DevTools Protocol
-    
+    // Ollama: direct HTTP client, no module
+
+    // UI & Web: net/http + html/template (no Templ)
+
+    // Browser: Scrapling MCP server, a Python subprocess (no Go module)
+
     // MCP
-    github.com/modelcontextprotocol/go-sdk   v0.x.x  // Official MCP Go SDK
-    
+    github.com/modelcontextprotocol/go-sdk   v1.8.0  // Official MCP Go SDK
+
+    // Search
+    github.com/chengyaolee/ragout            v0.0.0-20261020102032-e0fe1ac0d3b9  // BM25 + vector hybrid search
+
     // Storage (Pure Go SQLite, zero CGo)
-    modernc.org/sqlite                     v1.x.x
-    
+    modernc.org/sqlite                     v1.59.0
+
     // Config & Utilities
     gopkg.in/yaml.v3                       v3.x.x
     github.com/fsnotify/fsnotify           v1.x.x

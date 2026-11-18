@@ -1,4 +1,4 @@
-.PHONY: build run clean test templ setup serve runner
+.PHONY: build run clean test templ setup serve runner desktop desktop-dist
 
 BINARY_NAME=blooper
 BUILD_DIR=./cmd/blooper
@@ -41,3 +41,11 @@ install-templ:
 # Generate templ templates
 templ:
 	templ generate
+
+# Desktop development: native app with bundled coordinator + runner.
+desktop:
+	cd desktop && npm ci && npm start
+
+# Native installer for the current macOS/Windows machine.
+desktop-dist:
+	cd desktop && npm ci && npm run dist

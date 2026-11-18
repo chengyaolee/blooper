@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src http://127.0.0.1:*; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Blooper</title><link rel="stylesheet" href="app.css">
+</head>
+<body>
+<aside>
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="5" width="26" height="19" rx="5"/><path d="M11 29h10M16 24v5M10 13h.1M22 13h.1M11 18q5 4 10 0"/></svg><strong>Blooper</strong></div>
+  <nav aria-label="Main navigation">
+    <button data-page="chat" aria-current="page">Chat</button>
+    <button data-page="devices">Devices <span id="device-count"></span></button>
+    <button data-page="permissions">Permissions</button>
+    <button data-page="settings">Settings</button>
+  </nav>
+  <div class="host-status"><svg class="device-icon connected" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><div><strong>This computer</strong><small id="host-status">Starting…</small></div></div>
+  <p class="local-note">Your keys stay here.<br>Your devices connect over Wi-Fi.</p>
+</aside>
+<main>
+  <div id="message" role="status" aria-live="polite" hidden></div>
+  <section id="chat" class="page">
+    <header><div><h1>Your agents</h1><p>Ask, delegate, and keep work moving.</p></div><button id="connect-device">Connect a device</button></header>
+    <div id="chat-empty" class="empty" hidden><h2>Connect your first model</h2><p>Add your OpenAI key or choose Ollama to start chatting. Your key is stored on this computer.</p><button data-go="settings" class="primary">Connect a model</button></div>
+    <iframe id="chat-frame" title="Agent chat" hidden></iframe>
+  </section>
+  <section id="devices" class="page" hidden>
+    <header><div><h1>Your devices</h1><p>Connect your iPhone on the same Wi-Fi network.</p></div><button id="refresh-devices">Refresh</button></header>
+    <div class="two-column">
+      <div><h2>Paired devices</h2><div id="devices-list"></div></div>
+      <div class="pairing"><h2>Connect an iPhone</h2><p>Open Blooper on your phone and scan this code. The code verifies this computer and encrypts the connection.</p>
+        <label for="network">Local network</label><select id="network"></select>
+        <button id="new-pair" class="primary">Create pairing code</button>
+        <img id="pair-qr" width="280" height="280" alt="Pair this computer by scanning this QR code in Blooper on your iPhone" hidden>
+        <p id="pair-expiry" class="secondary"></p><p class="secondary">No networks listed? Connect to Wi-Fi, then refresh. Allow Blooper through your firewall on private networks.</p>
+      </div>
+    </div>
+  </section>
+  <section id="permissions" class="page" hidden>
+    <header><div><h1>What Blooper can do</h1><p>You choose the folders and actions available to your devices.</p></div></header>
+    <h2>Workspaces</h2><p>Allow tests in selected folders. Commands run on this computer.</p>
+    <div id="workspace-list"></div>
+    <div class="inline"><button id="choose-workspace">Choose a folder…</button><label for="test-preset">Test command</label><select id="test-preset"><option value="go">Go tests</option><option value="npm">npm test</option><option value="python">Python · pytest</option><option value="cargo">Rust · cargo test</option></select></div>
+    <h2>Applications</h2><p>Opening an app always asks for approval on your phone.</p><div id="apps-list"></div><button id="choose-app">Allow an application…</button>
+    <div class="footer"><button id="save-permissions" class="primary">Save permissions</button><span class="secondary">Changes apply after active jobs finish.</span></div>
+  </section>
+  <section id="settings" class="page" hidden>
+    <header><div><h1>Settings</h1><p>Credentials are encrypted using this computer’s system credential store.</p></div></header>
+    <form id="model-form" class="settings-group">
+      <h2>Model provider</h2><label for="provider">Run agents with</label><select id="provider"><option value="openai">OpenAI</option><option value="ollama">Ollama · local model</option></select>
+      <label for="model">Model</label><input id="model" value="gpt-5.4-mini" required spellcheck="false" autocomplete="off">
+      <div id="openai-fields"><label for="openai-key">OpenAI API key</label><input id="openai-key" type="password" placeholder="Enter a key, or leave blank to keep the saved key" autocomplete="off" spellcheck="false"><p id="openai-saved" class="secondary"></p></div>
+      <p id="provider-info" class="secondary">OpenAI receives your prompts and tool output. Your API key stays on this computer.</p>
+      <div class="inline"><button type="submit" class="primary">Validate and save</button><button type="button" id="openai-console">Get an API key</button><button type="button" id="delete-openai" class="danger">Delete saved key</button></div>
+    </form>
+    <form id="deepgram-form" class="settings-group">
+      <h2>Voice transcription <span class="optional">Optional</span></h2><p>Your iPhone can transcribe on-device. Connect Deepgram if you prefer hosted transcription.</p>
+      <label for="deepgram-key">Deepgram API key</label><input id="deepgram-key" type="password" autocomplete="off" spellcheck="false" placeholder="Enter a Deepgram API key"><p id="deepgram-saved" class="secondary"></p>
+      <div class="inline"><button type="submit">Validate and save</button><button type="button" id="deepgram-console">Get an API key</button><button type="button" id="delete-deepgram" class="danger">Delete saved key</button></div>
+      <p class="secondary">Validation sends one second of generated silence. Provider validation can use a small amount of API credit.</p>
+    </form>
+    <div class="settings-group"><h2>Application</h2>
+      <label class="check"><input type="checkbox" id="launch-at-login">Launch Blooper when I sign in</label>
+      <label class="check"><input type="checkbox" id="auto-updates" checked>Automatically check for and download updates</label>
+      <p class="secondary">Closing the window keeps Blooper running for your phone. Use Quit Blooper to stop it.</p>
+      <button id="save-preferences">Save preferences</button>
+      <p id="update-status" role="status"></p><div class="inline"><button id="check-updates">Check for updates</button><button id="install-update" hidden>Restart and install update</button></div>
+    </div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body></html>

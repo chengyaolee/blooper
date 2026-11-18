@@ -25,6 +25,7 @@ import (
 
 	"github.com/chengyaolee/blooper/internal/agent"
 	"github.com/chengyaolee/blooper/internal/core"
+	"github.com/chengyaolee/blooper/internal/desktop"
 	"github.com/chengyaolee/blooper/internal/llm"
 	"github.com/chengyaolee/blooper/internal/memory"
 	"github.com/chengyaolee/blooper/internal/remote"
@@ -104,6 +105,7 @@ func main() {
 	if cmd == "runner" {
 		cfgDefault = "runner.yaml"
 	}
+	dataDir := fs.String("data-dir", "", "desktop application data directory")
 	cfgPath := fs.String("config", cfgDefault, "config file")
 	fs.Parse(args)
 
@@ -112,6 +114,11 @@ func main() {
 
 	var err error
 	switch cmd {
+	case "desktop":
+		desktopCtx, cancelDesktop := context.WithCancel(ctx)
+		defer cancelDesktop()
+		go func() { _, _ = io.Copy(io.Discard, os.Stdin); cancelDesktop() }()
+		err = desktop.Run(desktopCtx, *dataDir)
 	case "serve":
 		err = serve(ctx, *cfgPath)
 	case "runner":
