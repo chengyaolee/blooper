@@ -57,3 +57,10 @@ func TestRegistryLoadAgents(t *testing.T) {
 		t.Errorf("expected agent_creator to be marked built_in")
 	}
 }
+
+func TestApprovalMustNameAnAllowedTool(t *testing.T) {
+	cfg := &AgentConfig{Approval: ApprovalConfig{RequireApprovalFor: []string{"email_send"}}}
+	if err := cfg.ValidateTools(nil); err == nil {
+		t.Fatal("unavailable approval tool accepted")
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 )
@@ -28,23 +29,54 @@ func NewOllamaClient(baseURL string) *OllamaClient {
 }
 
 type ollamaMessage struct {
-	Role      string     `json:"role"`
-	Content   string     `json:"content"`
-	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+	Role      string           `json:"role"`
+	Content   string           `json:"content"`
+	ToolCalls []ollamaToolCall `json:"tool_calls,omitempty"`
+}
+
+// Ollama sends and expects tool-call arguments as a JSON object, while
+// llm.ToolCall carries them as a JSON-encoded string (the OpenAI shape).
+type ollamaToolCall struct {
+	ID       string `json:"id,omitempty"`
+	Function struct {
+		Name      string          `json:"name"`
+		Arguments json.RawMessage `json:"arguments"`
+	} `json:"function"`
+}
+
+func toOllamaCalls(calls []ToolCall) []ollamaToolCall {
+	out := make([]ollamaToolCall, len(calls))
+	for i, tc := range calls {
+		out[i].ID = tc.ID
+		out[i].Function.Name = tc.Function.Name
+		out[i].Function.Arguments = json.RawMessage(tc.Function.Arguments)
+		if !json.Valid(out[i].Function.Arguments) {
+			out[i].Function.Arguments = json.RawMessage("{}")
+		}
+	}
+	return out
+}
+
+func fromOllamaCalls(calls []ollamaToolCall) []ToolCall {
+	var out []ToolCall
+	for _, tc := range calls {
+		out = append(out, ToolCall{ID: tc.ID, Type: "function", Function: ToolCallFunction{Name: tc.Function.Name, Arguments: string(tc.Function.Arguments)}})
+	}
+	return out
 }
 
 type ollamaChatRequest struct {
-	Model       string          `json:"model"`
-	Messages    []ollamaMessage `json:"messages"`
-	Tools       []ToolDef       `json:"tools,omitempty"`
-	Stream      bool            `json:"stream"`
-	Options     map[string]any  `json:"options,omitempty"`
+	Model    string          `json:"model"`
+	Messages []ollamaMessage `json:"messages"`
+	Tools    []ToolDef       `json:"tools,omitempty"`
+	Stream   bool            `json:"stream"`
+	Options  map[string]any  `json:"options,omitempty"`
 }
 
 type ollamaChatResponse struct {
-	Model     string        `json:"model"`
-	Message   ollamaMessage `json:"message"`
-	Done      bool          `json:"done"`
+	Model   string        `json:"model"`
+	Message ollamaMessage `json:"message"`
+	Done    bool          `json:"done"`
 }
 
 func (c *OllamaClient) mapMessages(messages []ChatMessage) []ollamaMessage {
@@ -53,7 +85,7 @@ func (c *OllamaClient) mapMessages(messages []ChatMessage) []ollamaMessage {
 		res[i] = ollamaMessage{
 			Role:      m.Role,
 			Content:   m.Content,
-			ToolCalls: m.ToolCalls,
+			ToolCalls: toOllamaCalls(m.ToolCalls),
 		}
 	}
 	return res
@@ -100,7 +132,8 @@ func (c *OllamaClient) Generate(ctx context.Context, req *ChatRequest) (*ChatRes
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ollama API error: status %d", resp.StatusCode)
+		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		return nil, fmt.Errorf("ollama API error: status %d: %s", resp.StatusCode, msg)
 	}
 
 	var ollamaResp ollamaChatResponse
@@ -112,7 +145,7 @@ func (c *OllamaClient) Generate(ctx context.Context, req *ChatRequest) (*ChatRes
 		Message: ChatMessage{
 			Role:      ollamaResp.Message.Role,
 			Content:   ollamaResp.Message.Content,
-			ToolCalls: ollamaResp.Message.ToolCalls,
+			ToolCalls: fromOllamaCalls(ollamaResp.Message.ToolCalls),
 		},
 		Done:  ollamaResp.Done,
 		Model: ollamaResp.Model,
@@ -120,8 +153,8 @@ func (c *OllamaClient) Generate(ctx context.Context, req *ChatRequest) (*ChatRes
 }
 
 // Stream implements InferenceEngine.Stream.
+// The caller owns out and closes it (agent.RunStream does).
 func (c *OllamaClient) Stream(ctx context.Context, req *ChatRequest, out chan<- StreamChunk) error {
-	defer close(out)
 	apiURL, err := url.JoinPath(c.BaseURL, "/api/chat")
 	if err != nil {
 		return err
@@ -161,7 +194,8 @@ func (c *OllamaClient) Stream(ctx context.Context, req *ChatRequest, out chan<- 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ollama API error: status %d", resp.StatusCode)
+		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		return fmt.Errorf("ollama API error: status %d: %s", resp.StatusCode, msg)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -175,7 +209,7 @@ func (c *OllamaClient) Stream(ctx context.Context, req *ChatRequest, out chan<- 
 
 		out <- StreamChunk{
 			Content:   ollamaResp.Message.Content,
-			ToolCalls: ollamaResp.Message.ToolCalls,
+			ToolCalls: fromOllamaCalls(ollamaResp.Message.ToolCalls),
 			Done:      ollamaResp.Done,
 		}
 
@@ -221,7 +255,8 @@ func (c *OllamaClient) ListModels(ctx context.Context) ([]string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ollama API error: status %d", resp.StatusCode)
+		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		return nil, fmt.Errorf("ollama API error: status %d: %s", resp.StatusCode, msg)
 	}
 
 	var tagsResp ollamaTagsResponse

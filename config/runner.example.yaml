@@ -1,0 +1,20 @@
+# Blooper runner config. Copy to runner.yaml on the computer to enroll, then:
+#   blooper runner -config runner.yaml
+# The planner can only name a workspace or app from this file. It never supplies a command.
+
+coordinator: "https://studio.tailXXXX.ts.net:8080"   # the coordinator's public_url; plain http needs allow_insecure: true
+name: "Mac Studio"                      # shown on the phone; say this name to target the device
+kind: desktop                           # desktop, or cloud for an isolated worker
+
+workspaces:                             # enables repo_run_tests
+  blooper:
+    path: /Users/me/code/blooper
+    test_cmd: [go, test, ./...]         # argv, run without a shell in a minimal environment
+    timeout: 15m
+    # env: {GOFLAGS: "-count=1"}
+
+apps:                                   # enables app_open; name -> launch command
+  notes: [open, -a, Notes]              # macOS
+  # notepad: [notepad.exe]              # Windows
+
+web_search: false                       # enables web_search (typical for kind: cloud)

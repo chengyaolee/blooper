@@ -156,7 +156,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	activeDisplayName := "Agent Creator"
 	activeModel := s.config.DefaultModel
 	if activeModel == "" {
-		activeModel = "qwen3:8b"
+		activeModel = "qwen2.5:3b"
 	}
 
 	for _, a := range agents {
@@ -169,6 +169,9 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if provider, ok := s.engine.(*llm.Provider); ok {
+		_, activeModel, _ = provider.Status()
+	}
 	data := indexViewData{
 		Agents:                 agents,
 		DefaultAgent:           s.config.DefaultAgent,
@@ -258,20 +261,18 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 			flusher.Flush()
 		}
 
-		for _, tc := range chunk.ToolCalls {
-			tool, found := s.toolRegistry.Get(tc.Function.Name)
-			if found && tool.RequiresApproval() {
-				appID := s.approvalQueue.Submit(agentName, tc.Function.Name, tc.Function.Arguments)
-				appData, _ := json.Marshal(map[string]interface{}{
-					"approval": map[string]string{
-						"id":        appID,
-						"tool_name": tc.Function.Name,
-						"arguments": tc.Function.Arguments,
-					},
-				})
-				fmt.Fprintf(w, "data: %s\n\n", appData)
-				flusher.Flush()
-			}
+		// The agent has already queued the action; show that item. Queuing it here too
+		// would create a second approval that runs the action twice if both are approved.
+		if item := s.approvalQueue.Get(chunk.ApprovalID); chunk.ApprovalID != "" && item != nil {
+			appData, _ := json.Marshal(map[string]interface{}{
+				"approval": map[string]string{
+					"id":        item.ID,
+					"tool_name": item.ToolName,
+					"arguments": item.Arguments,
+				},
+			})
+			fmt.Fprintf(w, "data: %s\n\n", appData)
+			flusher.Flush()
 		}
 	}
 
@@ -320,42 +321,25 @@ func (s *Server) handleApprovalAction(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if action == "approve" {
-		if err := s.approvalQueue.Approve(id); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		tool, found := s.toolRegistry.Get(item.ToolName)
-		if !found {
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "tool not found"})
-			return
-		}
-
-		result, err := tool.Execute(r.Context(), json.RawMessage(item.Arguments))
-		if err != nil {
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-
-		if item.ToolName == "create_agent_config" {
-			_ = s.agentRegistry.LoadDir("user_agents")
-			for _, a := range s.agentRegistry.List() {
-				s.router.Register(a.Name, a)
-			}
-		}
-
-		_ = json.NewEncoder(w).Encode(result)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	if action == "reject" {
-		_ = s.approvalQueue.Reject(id)
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "rejected"})
+	var err error
+	switch action {
+	case "approve":
+		err = s.approvalQueue.Approve(id)
+	case "reject":
+		err = s.approvalQueue.Reject(id)
+	default:
+		http.Error(w, "Unknown action", http.StatusBadRequest)
 		return
 	}
-
-	http.Error(w, "Unknown action", http.StatusBadRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": s.approvalQueue.Get(id).Status})
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -379,3 +363,6 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(status)
 }
+
+// Busy reports active chat work so application updates do not interrupt it.
+func (s *Server) Busy() bool { active, _ := s.scheduler.Stats(); return active > 0 }

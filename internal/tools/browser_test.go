@@ -29,8 +29,8 @@ func TestBrowserDetection(t *testing.T){
 		t.Fatalf("Failed to create JSON payload: %v", err)
 	}
 
-	// 3. Set a timeout for network load and rendering (45s to be generous)
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	// 3. Set a timeout for browser cold start (~20s on a server), network load and rendering
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
 	t.Log("Launching browser, navigating to https://bot.sannysoft.com...")

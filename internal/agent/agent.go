@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/chengyaolee/blooper/internal/llm"
 	"github.com/chengyaolee/blooper/internal/memory"
@@ -15,7 +16,15 @@ const maxIterations = 20
 // ApprovalSubmitter is an interface for queueing actions that require human sign-off.
 type ApprovalSubmitter interface {
 	Submit(agentName, toolName, arguments string) string
+	Wait(context.Context, string) error
 }
+
+type executionKey int
+
+const (
+	approvalKey executionKey = iota
+	progressKey
+)
 
 // Agent represents an executing agent instance.
 type Agent struct {
@@ -30,10 +39,16 @@ type Agent struct {
 
 // NewAgent creates a new Agent instance.
 func NewAgent(cfg *AgentConfig, engine llm.InferenceEngine, registry *tools.ToolRegistry) *Agent {
+	filtered := tools.NewRegistry()
+	for _, name := range cfg.Tools {
+		if tool, ok := registry.Get(name); ok {
+			filtered.Register(tool)
+		}
+	}
 	return &Agent{
 		Config:       cfg,
 		Engine:       engine,
-		ToolRegistry: registry,
+		ToolRegistry: filtered,
 		Memory:       memory.NewOrchestrator(engine, cfg.Model.Preferred),
 	}
 }
@@ -75,6 +90,9 @@ func (a *Agent) toolDefs() []llm.ToolDef {
 func (a *Agent) runTools(ctx context.Context, msg llm.ChatMessage, out chan<- llm.StreamChunk) {
 	step := []llm.ChatMessage{msg}
 	for _, tc := range msg.ToolCalls {
+		if ctx.Err() != nil {
+			break
+		}
 		reply := func(content string) {
 			step = append(step, llm.ChatMessage{Role: "tool", ToolCallID: tc.ID, Content: content})
 		}
@@ -91,19 +109,27 @@ func (a *Agent) runTools(ctx context.Context, msg llm.ChatMessage, out chan<- ll
 		}
 
 		// Security: Check if action requires human approval
-		if tool.RequiresApproval() {
-			appID := "untracked"
-			if a.ApprovalHandler != nil {
-				appID = a.ApprovalHandler.Submit(a.Config.Name, tc.Function.Name, tc.Function.Arguments)
+		if tool.RequiresApproval() || slices.Contains(a.Config.Approval.RequireApprovalFor, tc.Function.Name) {
+			handler, _ := ctx.Value(approvalKey).(ApprovalSubmitter)
+			if handler == nil {
+				handler = a.ApprovalHandler
 			}
-			if out != nil {
-				sendChunk(ctx, out, llm.StreamChunk{
-					ToolCalls: []llm.ToolCall{tc},
-					Content:   fmt.Sprintf("\n\n> ⚠️ **Action Submitted for Approval**: `%s` (ID: `%s`)\n", tc.Function.Name, appID),
-				})
+			if handler == nil {
+				reply("error: approval required but no approval handler is available")
+				continue
 			}
-			reply(fmt.Sprintf("Action pending human approval (ID: %s). The user will review and execute this action via the UI.", appID))
-			continue
+			appID := handler.Submit(a.Config.Name, tc.Function.Name, tc.Function.Arguments)
+			progress := out
+			if progress == nil {
+				progress, _ = ctx.Value(progressKey).(chan<- llm.StreamChunk)
+			}
+			if progress != nil {
+				sendChunk(ctx, progress, llm.StreamChunk{ApprovalID: appID, Content: fmt.Sprintf("\nWaiting for approval: `%s` (%s)\n", tc.Function.Name, appID)})
+			}
+			if err := handler.Wait(ctx, appID); err != nil {
+				reply("error: " + err.Error())
+				continue
+			}
 		}
 
 		if out != nil {
@@ -112,7 +138,7 @@ func (a *Agent) runTools(ctx context.Context, msg llm.ChatMessage, out chan<- ll
 			})
 		}
 
-		result, err := tool.Execute(ctx, json.RawMessage(tc.Function.Arguments))
+		result, err := tool.Execute(tools.WithCaller(ctx, a.Config.Name), json.RawMessage(tc.Function.Arguments))
 		var content string
 		switch {
 		case err != nil:
@@ -131,7 +157,14 @@ func (a *Agent) runTools(ctx context.Context, msg llm.ChatMessage, out chan<- ll
 
 // Run executes the agent loop synchronously until a final response is ready.
 func (a *Agent) Run(ctx context.Context, userMessage string) (string, error) {
+	ctx = llm.Pin(ctx, a.Engine)
 	a.Memory.Begin(userMessage)
+	if err := a.Config.ValidateTools(a.ToolRegistry); err != nil {
+		return "", err
+	}
+	if a.ApprovalHandler != nil {
+		ctx = context.WithValue(ctx, approvalKey, a.ApprovalHandler)
+	}
 	toolDefs := a.toolDefs()
 
 	for i := 0; i < maxIterations; i++ {
@@ -159,6 +192,15 @@ func (a *Agent) Run(ctx context.Context, userMessage string) (string, error) {
 // RunStream executes the agent loop, streaming the final response to the provided channel.
 func (a *Agent) RunStream(ctx context.Context, userMessage string, out chan<- llm.StreamChunk) error {
 	defer close(out)
+	ctx = llm.Pin(ctx, a.Engine)
+	if err := a.Config.ValidateTools(a.ToolRegistry); err != nil {
+		sendChunk(ctx, out, llm.StreamChunk{Error: err})
+		return err
+	}
+	if a.ApprovalHandler != nil {
+		ctx = context.WithValue(ctx, approvalKey, a.ApprovalHandler)
+	}
+	ctx = context.WithValue(ctx, progressKey, out)
 
 	for _, rule := range a.Memory.Begin(userMessage) {
 		sendChunk(ctx, out, llm.StreamChunk{Content: fmt.Sprintf("> 📌 You've said this before, so it's now a standing rule in MEMORY.md: *%s*\n\n", rule)})

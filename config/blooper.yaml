@@ -17,3 +17,21 @@ default_agent: "agent_creator"
 memory:
   db_path: "data/blooper.db"
   auto_summarize: true
+
+# Remote control: phones submit jobs, enrolled runners execute them. See docs/REMOTE.md.
+# Secrets come from the environment: OPENAI_API_KEY, DEEPGRAM_API_KEY.
+remote:
+  public_url: ""              # how phones and runners reach this server; default http://<hostname>:<port>
+  db_path: "data/remote.db"
+  planner: "auto"             # auto = OpenAI when OPENAI_API_KEY is set, else Ollama. Or: openai, ollama
+  openai_base_url: "https://api.openai.com/v1"
+  openai_model: "gpt-5.4-mini"   # hosted planner; chat agents continue to use local Ollama
+  ollama_model: "qwen2.5:3b"    # planner model when running local-only
+  deepgram_model: "nova-3"
+  job_timeout: "1h"
+
+# Optional Apple Push Notification service; secrets stay in the environment.
+# APNS_KEY_PATH=/path/to/AuthKey.p8, APNS_KEY_ID=..., APNS_TEAM_ID=...
+push:
+  topic: "com.blooper.remote"   # must match the iOS bundle ID
+  environment: "sandbox"      # Xcode debug: sandbox; TestFlight/App Store: production

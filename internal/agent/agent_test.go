@@ -56,7 +56,7 @@ func TestToolOutputNeverFloodsContext(t *testing.T) {
 		call("1", "read_log", `{}`),
 		call("2", "read_artifact", `{"id":"art-1","pattern":"FATAL"}`),
 	}}
-	a := NewAgent(&AgentConfig{}, eng, reg)
+	a := NewAgent(&AgentConfig{Tools: []string{"read_log"}}, eng, reg)
 
 	if _, err := a.Run(context.Background(), "why did it crash?"); err != nil {
 		t.Fatal(err)
@@ -69,5 +69,41 @@ func TestToolOutputNeverFloodsContext(t *testing.T) {
 	got := eng.last[len(eng.last)-1].Content
 	if !strings.Contains(got, "70001: FATAL disk on fire") {
 		t.Errorf("read_artifact result not in context: %q", got)
+	}
+}
+
+func TestAgentToolAllowlist(t *testing.T) {
+	reg := tools.NewRegistry()
+	reg.Register(bigLogTool{})
+	eng := &scriptEngine{script: []llm.ChatMessage{call("1", "read_log", `{}`)}}
+	a := NewAgent(&AgentConfig{}, eng, reg)
+	for _, def := range a.toolDefs() {
+		if def.Function.Name == "read_log" {
+			t.Fatal("unlisted tool exposed")
+		}
+	}
+	if _, err := a.Run(context.Background(), "read the log"); err != nil {
+		t.Fatal(err)
+	}
+	got := eng.last[len(eng.last)-1].Content
+	if !strings.Contains(got, `tool "read_log" not found`) {
+		t.Fatalf("unlisted call was not rejected: %q", got)
+	}
+	bad := NewAgent(&AgentConfig{Tools: []string{"unknown"}}, eng, reg)
+	if _, err := bad.Run(context.Background(), "go"); err == nil {
+		t.Fatal("unknown configured tool accepted")
+	}
+}
+
+func TestConfiguredApprovalFailsClosed(t *testing.T) {
+	reg := tools.NewRegistry()
+	reg.Register(bigLogTool{})
+	eng := &scriptEngine{script: []llm.ChatMessage{call("1", "read_log", `{}`)}}
+	a := NewAgent(&AgentConfig{Tools: []string{"read_log"}, Approval: ApprovalConfig{RequireApprovalFor: []string{"read_log"}}}, eng, reg)
+	if _, err := a.Run(context.Background(), "read"); err != nil {
+		t.Fatal(err)
+	}
+	if got := eng.last[len(eng.last)-1].Content; !strings.Contains(got, "no approval handler") {
+		t.Fatalf("approval bypass: %q", got)
 	}
 }

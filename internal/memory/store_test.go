@@ -112,3 +112,30 @@ func TestRecallOnEmptyStore(t *testing.T) {
 		t.Fatalf("want no results and no error, got %v %v", got, err)
 	}
 }
+
+func TestRecallWithoutOllama(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "local.db")
+	store, err := Open(path, WithoutEmbeddings())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SaveConversation("researcher", "observatory telescope schedule", "telescope observations Friday", "completed", ""); err != nil {
+		t.Fatal(err)
+	}
+	records, err := store.Recall("telescope", 3)
+	if err != nil || len(records) == 0 {
+		t.Fatalf("local recall: %v %v", records, err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	store, err = Open(path, WithoutEmbeddings())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	records, err = store.Recall("telescope", 3)
+	if err != nil || len(records) == 0 {
+		t.Fatalf("persisted local recall: %v %v", records, err)
+	}
+}

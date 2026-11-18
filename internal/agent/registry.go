@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+	"github.com/chengyaolee/blooper/internal/tools"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 type AgentRegistry struct {
 	mu     sync.RWMutex
 	agents map[string]*AgentConfig
+	Tools  *tools.ToolRegistry // set before loading to validate capabilities
 }
 
 // NewAgentRegistry creates a new, empty AgentRegistry.
@@ -68,6 +70,11 @@ func (r *AgentRegistry) LoadDir(dirPath string) error {
 			return fmt.Errorf("failed to load agent config %s: %w", path, err)
 		}
 
+		if r.Tools != nil {
+			if err := cfg.ValidateTools(r.Tools); err != nil {
+				return fmt.Errorf("%s: %w", path, err)
+			}
+		}
 		r.Register(cfg)
 	}
 

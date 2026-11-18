@@ -18,12 +18,12 @@ persona:
     - When done, provide a brief summary at the top
 
 model:
-  preferred: "qwen3:14b"
-  fallback: "qwen3:8b"
+  preferred: "qwen2.5:3b"
   temperature: 0.3
   context_length: 8192
 
 tools:
+  - delegate
   - web_search
   - browser
   - file_write
@@ -33,7 +33,3 @@ delegation:
   can_delegate_to:
     - email_drafter
   max_delegation_depth: 2
-
-approval:
-  require_approval_for:
-    - form_submit

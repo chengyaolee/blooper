@@ -314,8 +314,8 @@ func (t *BrowserTool) Execute(ctx context.Context, args json.RawMessage) (*ToolR
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	// Per-task timeout; 60s leaves room for Cloudflare solving.
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	// Per-task timeout: a cold server start plus a Cloudflare solve measured ~100s.
+	ctx, cancel := context.WithTimeout(ctx, 180*time.Second)
 	defer cancel()
 
 	if err := t.getSession(ctx); err != nil {

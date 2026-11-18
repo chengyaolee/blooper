@@ -15,6 +15,7 @@ import (
 // CreateAgentConfigTool is a built-in tool to create new agents.
 type CreateAgentConfigTool struct {
 	OutputDir string
+	Registry  *tools.ToolRegistry
 }
 
 func NewCreateAgentConfigTool(outputDir string) *CreateAgentConfigTool {
@@ -97,6 +98,11 @@ func (t *CreateAgentConfigTool) Execute(ctx context.Context, args json.RawMessag
 		return &tools.ToolResult{Error: fmt.Sprintf("invalid agent configuration: %v", err)}, nil
 	}
 
+	if t.Registry != nil {
+		if err := cfg.ValidateTools(t.Registry); err != nil {
+			return &tools.ToolResult{Error: err.Error()}, nil
+		}
+	}
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal config: %w", err)

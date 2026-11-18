@@ -18,8 +18,7 @@ persona:
     - Present the draft clearly with To, Subject, and Body fields
 
 model:
-  preferred: "qwen3:14b"
-  fallback: "qwen3:8b"
+  preferred: "qwen2.5:3b"
   temperature: 0.5
   context_length: 4096
 
@@ -30,7 +29,3 @@ tools:
 delegation:
   can_delegate_to: []
   max_delegation_depth: 0
-
-approval:
-  require_approval_for:
-    - email_send

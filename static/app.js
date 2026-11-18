@@ -68,13 +68,15 @@ async function sendMessage(e) {
         let accumulated = "";
         streamTarget.innerHTML = "";
 
+        let pending = "";
         while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
+            pending += decoder.decode(value, { stream: true });
             
             // Check for Server-Sent Events lines (data: ...)
-            const lines = chunk.split('\n');
+            const lines = pending.split('\n');
+            pending = lines.pop();
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     const dataStr = line.slice(6).trim();
@@ -130,11 +132,12 @@ async function resolveApproval(id, approve) {
         const res = await fetch(`/api/approvals/${id}/${approve ? 'approve' : 'reject'}`, {
             method: 'POST'
         });
+        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         if (approve) {
             card.innerHTML = `
-                <div class="approval-title" style="color: var(--success)">✅ Approved & Executed</div>
-                <div class="approval-body">${escapeHtml(data.output || 'Success')}</div>
+                <div class="approval-title" style="color: var(--success)">✅ Approved; agent is continuing</div>
+                <div class="approval-body">Execution results appear in the conversation.</div>
             `;
         } else {
             card.innerHTML = `

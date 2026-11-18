@@ -32,7 +32,13 @@ type Store struct {
 // Option configures Open.
 type Option func(*config)
 
-type config struct{ embedder ragout.Embedder }
+type config struct {
+	embedder ragout.Embedder
+	lexical  bool
+}
+
+// WithoutEmbeddings keeps recall on-device without requiring an Ollama service.
+func WithoutEmbeddings() Option { return func(c *config) { c.lexical = true } }
 
 // WithEmbedder replaces the default embedder (Ollama nomic-embed-text on localhost).
 func WithEmbedder(e ragout.Embedder) Option { return func(c *config) { c.embedder = e } }
@@ -80,13 +86,18 @@ func Open(dbPath string, opts ...Option) (*Store, error) {
 		vecPath:  dbPath + ".vec",
 		bm25Path: dbPath + ".bm25",
 	}
-	s.rag, err = ragout.NewEngine(
+	options := []ragout.EngineOption{
 		ragout.WithReader(reader.NewTextReader(0)),
 		ragout.WithChunker(chunks),
-		ragout.WithEmbedder(cfg.embedder),
-		ragout.WithVectorStore(s.vec),
 		ragout.WithIndexStore(s.bm25),
-	)
+	}
+	if cfg.lexical {
+		s.vecPath = dbPath + ".lexical.vec"
+		s.bm25Path = dbPath + ".lexical.bm25"
+	} else {
+		options = append(options, ragout.WithEmbedder(cfg.embedder), ragout.WithVectorStore(s.vec))
+	}
+	s.rag, err = ragout.NewEngine(options...)
 	if err != nil {
 		db.Close()
 		return nil, err

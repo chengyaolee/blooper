@@ -3,7 +3,9 @@ package agent
 import (
 	"errors"
 	"fmt"
+	"github.com/chengyaolee/blooper/internal/tools"
 	"os"
+	"slices"
 
 	"gopkg.in/yaml.v3"
 )
@@ -76,6 +78,25 @@ func (c *AgentConfig) Validate() error {
 	}
 	if c.Model.Preferred == "" {
 		return errors.New("model.preferred is required")
+	}
+	return nil
+}
+
+// ValidateTools checks configured capabilities against the tools available in this process.
+// Memory helpers are managed by the orchestrator and are available to every agent.
+func (c *AgentConfig) ValidateTools(reg *tools.ToolRegistry) error {
+	for _, name := range c.Tools {
+		if _, ok := reg.Get(name); !ok {
+			return fmt.Errorf("agent %q: unavailable tool %q", c.Name, name)
+		}
+	}
+	for _, name := range c.Approval.RequireApprovalFor {
+		if !slices.Contains(c.Tools, name) {
+			return fmt.Errorf("agent %q: approval tool %q must be listed in tools", c.Name, name)
+		}
+	}
+	if len(c.Delegation.CanDelegateTo) > 0 && !slices.Contains(c.Tools, "delegate") {
+		return fmt.Errorf("agent %q: can_delegate_to requires the delegate tool", c.Name)
 	}
 	return nil
 }

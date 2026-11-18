@@ -29,6 +29,7 @@ func TestApprovalQueue(t *testing.T) {
 		t.Fatalf("Approve failed: %v", err)
 	}
 
+	item = q.Get(id)
 	if item.Status != "approved" {
 		t.Errorf("expected status 'approved', got %q", item.Status)
 	}

@@ -42,5 +42,6 @@ KV_cache_bytes = 2 × num_layers × num_kv_heads × head_dim × precision_bytes 
 
 1. Read `internal/llm/engine.go` to understand the interface contract
 2. Read `internal/llm/kv_placeholder.go` for the KV manager stubs
-3. Copy `stub_client.go` as a starting point for your custom engine
+3. Copy `stub_client.go` as a starting point for your custom engine. It is a library example
+   (`package customengine`), so repository-wide builds do not require a `main` entry point.
 4. Register your engine in `cmd/blooper/main.go` using a flag or config option

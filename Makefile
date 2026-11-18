@@ -1,4 +1,4 @@
-.PHONY: build run clean test templ
+.PHONY: build run clean test templ setup serve runner
 
 BINARY_NAME=blooper
 BUILD_DIR=./cmd/blooper
@@ -8,6 +8,18 @@ build:
 
 run: build
 	./$(BINARY_NAME)
+
+# First-time setup: builds, writes config, optionally sets up a runner.
+setup:
+	./scripts/setup.sh
+
+# Start the server with the config setup.sh wrote. Loads .env for API keys.
+serve: build
+	set -a; [ -f .env ] && . ./.env; set +a; ./$(BINARY_NAME) serve -config config/blooper.local.yaml
+
+# Run this computer as a runner (see runner.yaml, written by setup.sh).
+runner: build
+	./$(BINARY_NAME) runner -config runner.yaml
 
 dev:
 	go run $(BUILD_DIR)

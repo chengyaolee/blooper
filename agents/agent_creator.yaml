@@ -25,8 +25,7 @@ persona:
     - What the agent should NOT do
 
 model:
-  preferred: "qwen3:14b"
-  fallback: "qwen3:8b"
+  preferred: "qwen2.5:3b"
   temperature: 0.4
   context_length: 8192
 

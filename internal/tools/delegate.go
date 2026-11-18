@@ -68,12 +68,18 @@ func (t *DelegateTool) Execute(ctx context.Context, args json.RawMessage) (*Tool
 		return &ToolResult{Error: "invalid arguments"}, nil
 	}
 
-	// Prevent self-delegation loop
-	if params.Agent == t.CurrentAgent {
-		return &ToolResult{Error: fmt.Sprintf("agent %q cannot delegate to itself", t.CurrentAgent)}, nil
+	// The tool is shared by all agents, so the executing agent comes from the context.
+	caller := Caller(ctx)
+	if caller == "" {
+		caller = t.CurrentAgent
 	}
 
-	output, err := t.Delegator.Delegate(ctx, t.CurrentAgent, params.Agent, params.Task)
+	// Prevent self-delegation loop
+	if params.Agent == caller {
+		return &ToolResult{Error: fmt.Sprintf("agent %q cannot delegate to itself", caller)}, nil
+	}
+
+	output, err := t.Delegator.Delegate(ctx, caller, params.Agent, params.Task)
 	if err != nil {
 		return &ToolResult{Error: fmt.Sprintf("delegation to %s failed: %v", params.Agent, err)}, nil
 	}

@@ -35,7 +35,8 @@ func sanitizePath(baseDir, requestedPath string) (string, error) {
 	}
 
 	// Verify that cleanTarget starts with cleanBase
-	if !strings.HasPrefix(cleanTarget, cleanBase) {
+	relative, relErr := filepath.Rel(cleanBase, cleanTarget)
+	if relErr != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
 		return "", fmt.Errorf("access denied: path escapes permitted directory %s", baseDir)
 	}
 
