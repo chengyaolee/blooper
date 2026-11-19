@@ -5,7 +5,7 @@ The manual server and runner setup below remains available for advanced/self-hos
 
 Speak or type a request on an iPhone. The coordinator inside `blooper serve` records it as a durable job, plans it with a model, and hands typed actions to a runner on the computer that does the work. The phone can close; the job continues, and the app catches up when it reopens.
 
-This implements the first build of `Voice_Agent_Protocol_Brief.md`, adapted to blooper.
+This implements the first build of the [original voice-agent protocol brief](archive/Voice_Agent_Protocol_Brief.md), adapted to blooper.
 
 ## Architecture
 

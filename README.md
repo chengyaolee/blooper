@@ -1,4 +1,4 @@
-# blooper
+<h1><img src="assets/blooper-logo.png" alt="blooper" width="280"></h1>
 
 Send a spoken or typed instruction from your iPhone and let your computer carry it out.
 blooper combines an agent fleet, a desktop runner, and optional **Mac computer control**:
@@ -297,6 +297,21 @@ Delegation requires `delegate` in `tools` plus permitted targets in `can_delegat
 restrictions and depth limits apply, including approvals inside delegated agents. Chat agent
 delegation and the phone's runner-job tools remain separate execution paths.
 
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| `cmd/blooper/` | CLI and desktop-runtime entry point |
+| `internal/` | Shared Go backend: agents, models, memory, tools, coordinator, runner, and desktop hosting |
+| `desktop/` | Electron app, desktop UI, native Mac helper, and packaging |
+| `ios/` | SwiftUI companion and platform test harnesses |
+| `agents/`, `config/` | Built-in agent definitions and configuration examples |
+| `assets/` | Source brand images, including the README logo |
+| `static/`, `internal/ui/templates/` | Embedded web-chat resources |
+| `scripts/` | Source setup and platform verification helpers |
+| [docs/](docs/README.md) | Current operational guides and archived design/learning material |
+| `experiments/` | Optional inference experiments |
+
 ## Verification
 
 From the repository root:
@@ -329,3 +344,8 @@ delegation checks. [Hosted provider checks](docs/REMOTE.md#hosted-service-keys-a
 OpenAI and Deepgram. These live checks require keys and can incur provider charges. Signed iOS
 builds, physical-device pairing, Windows installation, and production update cycles still need
 platform validation.
+
+## License
+
+blooper is licensed under the [MIT License](LICENSE). Third-party dependencies retain their
+own licenses.

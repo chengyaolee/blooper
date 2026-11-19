@@ -1,5 +1,9 @@
 # blooper: Autonomous Productivity Agent Fleet (Go)
 
+> Historical design plan for an earlier local-inference version. Some proposals and paths
+> have changed. For the current architecture and setup, see the [README](../../README.md)
+> and [desktop guide](../DESKTOP.md).
+
 ## Revised Vision (v3.1)
 
 Build **blooper** — a locally-run, Go-based autonomous agent fleet for productivity tasks. A single compiled binary with minimal RAM usage (~10 MB), a chat UI (`html/template` + SSE), declarative agent configs, an Agent Creator meta-agent, and persistent searchable memory (SQLite + ragout hybrid search). Runs on local LLMs. Agents draft actions for human approval before executing.

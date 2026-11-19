@@ -1,5 +1,8 @@
 # Voice-controlled agent
 
+> Original proposal, retained for design context. For the implemented protocol, permissions,
+> and current limitations, see the [remote guide](../REMOTE.md) and [README](../../README.md).
+
 **Engineering ideation brief · Proposed v0.1**
 
 The phone is the remote. A user can say “Run the tests on my desktop and tell me when they’re done” or “Research this question in a cloud workspace.” The phone acknowledges once the request is recorded, then the selected runner keeps working when the app closes or the phone changes networks. The user can reopen the app to see the job, review a requested action, retrieve a result, or stop execution.

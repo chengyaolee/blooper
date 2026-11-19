@@ -1,5 +1,9 @@
 # blooper: The Step-by-Step Hands-On Engineering Workbook
 
+> Historical learning exercises, including proposed files and APIs that are not part of the
+> current runtime. For current requirements and setup, see the [README](../../README.md).
+> Source paths in these exercises are relative to the repository root.
+
 Welcome! This workbook is designed specifically to help you build and understand the advanced parts of blooper **step-by-step**.
 
 Every milestone is broken down into **numbered micro-tasks**. You will never have to guess which file to touch, what lines of code to write, or why you are writing them.
@@ -49,7 +53,7 @@ go version
 
 #### Check 3: Verify blooper Current Tests Pass
 ```bash
-cd /Users/chengyao/Documents/GitHub/blooper
+cd /path/to/blooper
 go test ./...
 ```
 * **Expected Output**: `PASS` across all internal packages (`agent`, `core`, `memory`, `tools`).
@@ -89,7 +93,7 @@ touch internal/tools/browser_test.go
 ---
 
 ### Step 1.1.2: Write the Test Code
-Open [internal/tools/browser_test.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/browser_test.go) and paste the following code:
+Open [internal/tools/browser_test.go](../../internal/tools/browser_test.go) and paste the following code:
 
 ```go
 package tools
@@ -192,7 +196,7 @@ We will update our browser launcher to use `--headless=new`.
 ---
 
 ### Step 1.2.1: Open `internal/tools/browser.go`
-Open [internal/tools/browser.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/browser.go) and navigate to lines ~80–92 (inside the `getBrowser()` method).
+Open [internal/tools/browser.go](../../internal/tools/browser.go) and navigate to lines ~80–92 (inside the `getBrowser()` method).
 
 You will see:
 ```go
@@ -313,7 +317,7 @@ go list -m github.com/go-rod/stealth
 ---
 
 ### Step 1.4.2: Import Stealth in `internal/tools/browser.go`
-Open [internal/tools/browser.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/browser.go).
+Open [internal/tools/browser.go](../../internal/tools/browser.go).
 
 At the top of the file, add the import:
 ```go
@@ -375,7 +379,7 @@ If an agent needs to type into a search box or login form, sending the entire te
 ---
 
 ### Step 1.5.1: Write the `humanType` Function
-Open [internal/tools/browser.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/browser.go).
+Open [internal/tools/browser.go](../../internal/tools/browser.go).
 
 Add this function near the bottom of the file:
 ```go
@@ -492,7 +496,7 @@ touch internal/llm/kv_allocator.go
 ---
 
 ### Step 2.2.2: Paste the Implementation
-Open [internal/llm/kv_allocator.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/llm/kv_allocator.go) and paste:
+Open [internal/llm/kv_allocator.go](../../internal/llm/kv_allocator.go) and paste:
 
 ```go
 package llm
@@ -627,7 +631,7 @@ func (m *SlotManager) Stats() (*KVMetrics, error) {
 touch internal/llm/kv_test.go
 ```
 
-Open [internal/llm/kv_test.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/llm/kv_test.go) and add:
+Open [internal/llm/kv_test.go](../../internal/llm/kv_test.go) and add:
 
 ```go
 package llm
@@ -747,7 +751,7 @@ Build `MCPClient` in `internal/tools/mcp_client.go`. It will launch any external
 
 ### Step 3.1.1: Create the Source File
 * **Folder**: `internal/tools/`
-* **File to Create**: [internal/tools/mcp_client.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_client.go)
+* **File to Create**: `internal/tools/mcp_client.go`
 
 In terminal:
 ```bash
@@ -757,7 +761,7 @@ touch internal/tools/mcp_client.go
 ---
 
 ### Step 3.1.2: Write the `MCPClient` Implementation
-Open [internal/tools/mcp_client.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_client.go) and paste:
+Open `internal/tools/mcp_client.go` and paste:
 
 ```go
 package tools
@@ -957,13 +961,13 @@ func (c *MCPClient) Close() error {
 ## Task 3.2: Implement the Tool Adapter for blooper
 
 ### The Goal
-blooper's agents execute tools that conform to the `tools.Tool` interface in [internal/tools/tool.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/tool.go). We will build an adapter in `internal/tools/mcp_adapter.go` that translates an MCP tool definition into this interface so any blooper agent can call it like a native tool.
+blooper's agents execute tools that conform to the `tools.Tool` interface in [internal/tools/tool.go](../../internal/tools/tool.go). We will build an adapter in `internal/tools/mcp_adapter.go` that translates an MCP tool definition into this interface so any blooper agent can call it like a native tool.
 
 ---
 
 ### Step 3.2.1: Create the Adapter File
 * **Folder**: `internal/tools/`
-* **File to Create**: [internal/tools/mcp_adapter.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_adapter.go)
+* **File to Create**: `internal/tools/mcp_adapter.go`
 
 ```bash
 touch internal/tools/mcp_adapter.go
@@ -972,7 +976,7 @@ touch internal/tools/mcp_adapter.go
 ---
 
 ### Step 3.2.2: Write the `MCPToolAdapter` Implementation
-Open [internal/tools/mcp_adapter.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_adapter.go) and paste:
+Open `internal/tools/mcp_adapter.go` and paste:
 
 ```go
 package tools
@@ -1076,7 +1080,7 @@ Verify that `MCPClient` can start a process, execute the `initialize` handshake,
 touch internal/tools/mcp_test.go
 ```
 
-Open [internal/tools/mcp_test.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/tools/mcp_test.go) and paste:
+Open `internal/tools/mcp_test.go` and paste:
 
 ```go
 package tools
@@ -1234,7 +1238,7 @@ ollama pull nomic-embed-text
 touch internal/memory/embed.go
 ```
 
-Open [internal/memory/embed.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/memory/embed.go) and add:
+Open `internal/memory/embed.go` and add:
 
 ```go
 package memory
@@ -1327,7 +1331,7 @@ $$\text{Cosine Similarity}(A, B) = \frac{A \cdot B}{\|A\| \|B\|}$$
 touch internal/memory/hybrid.go
 ```
 
-Open [internal/memory/hybrid.go](file:///Users/chengyao/Documents/GitHub/blooper/internal/memory/hybrid.go) and add:
+Open `internal/memory/hybrid.go` and add:
 
 ```go
 package memory

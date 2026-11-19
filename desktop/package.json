@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "Your agents and devices, connected locally",
   "author": "blooper contributors",
+  "license": "MIT",
   "main": "main.cjs",
   "scripts": {
     "build:runtime": "node build-runtime.cjs",
@@ -32,6 +33,10 @@
       "package.json"
     ],
     "extraResources": [
+      {
+        "from": "../LICENSE",
+        "to": "LICENSE"
+      },
       {
         "from": "bin",
         "to": "runtime"

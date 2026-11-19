@@ -208,8 +208,9 @@ when camera access is denied, and both pairing and enrollment have an explicit C
 
 ## Brand assets
 
-The supplied `blooper-logo.png` is the wordmark used by desktop, web chat and iOS navigation.
-`blooper-full-icon-512.png` supplies the macOS, Windows and iOS app icons. Packaged icons
+The source [wordmark](../assets/blooper-logo.png) and [app icon](../assets/blooper-full-icon-512.png)
+live in `assets/`. The README uses the source wordmark. Runtime copies stay in `desktop/ui/`,
+`static/`, and the iOS asset catalog so each app can bundle its own resources. Packaged icons
 place the artwork on white; iOS uses a 1024px version scaled from the supplied 512px source.
 The display name is **blooper**. Bundle IDs, pairing protocols and the desktop storage identity
 remain stable so existing credentials and paired devices keep working.
